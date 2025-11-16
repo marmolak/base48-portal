@@ -4,7 +4,8 @@
       "Bash(go build:*)",
       "Bash(go mod tidy:*)",
       "Bash(sqlc version:*)",
-      "Bash(sqlc generate:*)"
+      "Bash(sqlc generate:*)",
+      "Bash(./portal.exe)"
     ],
     "deny": [],
     "ask": []

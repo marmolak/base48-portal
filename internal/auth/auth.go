@@ -148,7 +148,7 @@ func (a *Authenticator) CallbackHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Redirect to dashboard
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/dashboard", http.StatusTemporaryRedirect)
 }
 
 // LogoutHandler clears the session

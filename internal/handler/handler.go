@@ -2,9 +2,9 @@ package handler
 
 import (
 	"database/sql"
+	"fmt"
 	"html/template"
 	"net/http"
-	"path/filepath"
 
 	"github.com/base48/member-portal/internal/auth"
 	"github.com/base48/member-portal/internal/db"
@@ -21,16 +21,12 @@ type Handler struct {
 func New(authenticator *auth.Authenticator, database *sql.DB, templatesDir string) (*Handler, error) {
 	queries := db.New(database)
 
-	// Load all templates
-	tmpl, err := template.ParseGlob(filepath.Join(templatesDir, "*.html"))
-	if err != nil {
-		return nil, err
-	}
-
+	// Note: templates is set to nil, we'll parse on each request
+	// This is simpler than managing template name conflicts
 	return &Handler{
 		auth:      authenticator,
 		queries:   queries,
-		templates: tmpl,
+		templates: nil, // Will be loaded per-request
 	}, nil
 }
 
@@ -46,6 +42,71 @@ func (h *Handler) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "home.html", data)
 }
 
+// getOrCreateUser tries to find user by Keycloak ID, then by email (for migration),
+// and creates a new user if none exists
+func (h *Handler) getOrCreateUser(r *http.Request, kcUser *auth.User) (*db.User, error) {
+	ctx := r.Context()
+	log := func(msg string) {
+		fmt.Printf("[getOrCreateUser] KC_ID=%s Email=%s - %s\n", kcUser.ID, kcUser.Email, msg)
+	}
+
+	// Try to find by Keycloak ID first
+	dbUser, err := h.queries.GetUserByKeycloakID(ctx, kcUser.ID)
+	if err == nil {
+		log("Found by Keycloak ID")
+		return &dbUser, nil
+	}
+	if err != sql.ErrNoRows {
+		log(fmt.Sprintf("Error finding by KC_ID: %v", err))
+		return nil, err
+	}
+
+	// Try to find by email (for migration from old system)
+	log("Not found by KC_ID, trying email...")
+	dbUser, err = h.queries.GetUserByEmail(ctx, kcUser.Email)
+	if err == nil {
+		log("Found by email! Linking Keycloak ID...")
+		// Found by email! Link the Keycloak ID
+		linkedUser, err := h.queries.LinkKeycloakID(ctx, db.LinkKeycloakIDParams{
+			KeycloakID: kcUser.ID,
+			Email:      kcUser.Email,
+		})
+		if err != nil {
+			log(fmt.Sprintf("Error linking KC_ID: %v", err))
+			return nil, err
+		}
+		log("Successfully linked!")
+		return &linkedUser, nil
+	}
+	if err != sql.ErrNoRows {
+		log(fmt.Sprintf("Error finding by email: %v", err))
+		return nil, err
+	}
+
+	// User doesn't exist - create new one
+	log("User not found, creating new user...")
+	newUser, err := h.queries.CreateUser(ctx, db.CreateUserParams{
+		KeycloakID:        kcUser.ID,
+		Email:             kcUser.Email,
+		Realname:          sql.NullString{String: kcUser.Name, Valid: kcUser.Name != ""},
+		Phone:             sql.NullString{},
+		AltContact:        sql.NullString{},
+		LevelID:           1, // Awaiting level
+		LevelActualAmount: "0",
+		PaymentsID:        sql.NullString{},
+		State:             "awaiting",
+		IsCouncil:         false,
+		IsStaff:           false,
+	})
+	if err != nil {
+		log(fmt.Sprintf("Error creating user: %v", err))
+		return nil, err
+	}
+
+	log("Successfully created new user!")
+	return &newUser, nil
+}
+
 // DashboardHandler displays the member dashboard
 func (h *Handler) DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	user := h.auth.GetUser(r)
@@ -54,17 +115,9 @@ func (h *Handler) DashboardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user from database
-	dbUser, err := h.queries.GetUserByKeycloakID(r.Context(), user.ID)
+	// Get or create user in database
+	dbUser, err := h.getOrCreateUser(r, user)
 	if err != nil {
-		// User not in DB yet, create them
-		if err == sql.ErrNoRows {
-			h.render(w, "setup.html", map[string]interface{}{
-				"Title": "Complete Setup",
-				"User":  user,
-			})
-			return
-		}
 		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
@@ -121,9 +174,9 @@ func (h *Handler) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbUser, err := h.queries.GetUserByKeycloakID(r.Context(), user.ID)
+	dbUser, err := h.getOrCreateUser(r, user)
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
@@ -156,7 +209,19 @@ func (h *Handler) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 // render is a helper to render templates
 func (h *Handler) render(w http.ResponseWriter, name string, data interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := h.templates.ExecuteTemplate(w, name, data); err != nil {
-		http.Error(w, "Template error", http.StatusInternalServerError)
+
+	// Parse templates fresh each time to avoid name conflicts
+	tmpl, err := template.ParseFiles(
+		"web/templates/layout.html",
+		"web/templates/"+name,
+	)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Template parse error: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Execute the layout template (which includes the specific page)
+	if err := tmpl.ExecuteTemplate(w, "layout.html", data); err != nil {
+		http.Error(w, fmt.Sprintf("Template execution error: %v", err), http.StatusInternalServerError)
 	}
 }

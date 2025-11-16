@@ -7,6 +7,13 @@ SELECT * FROM users WHERE id = ? LIMIT 1;
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE email = ? LIMIT 1;
 
+-- name: LinkKeycloakID :one
+UPDATE users SET
+    keycloak_id = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE email = ? AND keycloak_id = ''
+RETURNING *;
+
 -- name: ListUsers :many
 SELECT * FROM users ORDER BY realname, email;
 

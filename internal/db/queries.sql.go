@@ -410,6 +410,44 @@ func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID string) (U
 	return i, err
 }
 
+const linkKeycloakID = `-- name: LinkKeycloakID :one
+UPDATE users SET
+    keycloak_id = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE email = ? AND keycloak_id = ''
+RETURNING id, keycloak_id, email, realname, phone, alt_contact, level_id, level_actual_amount, payments_id, date_joined, keys_granted, keys_returned, state, is_council, is_staff, created_at, updated_at
+`
+
+type LinkKeycloakIDParams struct {
+	KeycloakID string `json:"keycloak_id"`
+	Email      string `json:"email"`
+}
+
+func (q *Queries) LinkKeycloakID(ctx context.Context, arg LinkKeycloakIDParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, linkKeycloakID, arg.KeycloakID, arg.Email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.KeycloakID,
+		&i.Email,
+		&i.Realname,
+		&i.Phone,
+		&i.AltContact,
+		&i.LevelID,
+		&i.LevelActualAmount,
+		&i.PaymentsID,
+		&i.DateJoined,
+		&i.KeysGranted,
+		&i.KeysReturned,
+		&i.State,
+		&i.IsCouncil,
+		&i.IsStaff,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listAllLevels = `-- name: ListAllLevels :many
 SELECT id, name, amount, active, created_at FROM levels ORDER BY amount
 `
