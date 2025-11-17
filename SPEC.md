@@ -9,15 +9,19 @@ Member portál pro hackerspace Base48. Reimplementace původního Haskell portá
 ### Core Features (MVP)
 
 1. **Autentizace & Autorizace**
-   - Keycloak OIDC SSO integrace
-   - Role: member, council, staff (admin)
-   - Session management
+   - Keycloak OIDC SSO integrace (uživatelské přihlášení)
+   - Keycloak Service Account (automatizace a admin operace)
+   - Role: `memberportal_admin`, `active_member`, `in_debt`
+   - Session management (pouze user info, ne tokeny)
+   - Dual client architektura (web + service account)
 
 2. **Správa členů**
    - Zobrazení vlastního profilu
    - Editace kontaktních údajů
    - Zobrazení stavu členství a plateb
-   - Staff: správa všech členů
+   - Admin: přehled všech uživatelů (/admin/users)
+   - Admin: správa Keycloak rolí (assign/remove)
+   - Admin API pro programový přístup
 
 3. **Evidence plateb**
    - Zobrazení historie plateb
@@ -120,24 +124,38 @@ NOTES:
 base48-portal/
 ├── cmd/
 │   ├── server/          # Main aplikace
-│   └── import/          # Import tool ze staré databáze (rememberportal)
+│   ├── import/          # Import tool ze staré databáze (rememberportal)
+│   ├── cron/            # Automatizované úlohy (update_debt_status)
+│   └── test/            # Test skripty (list_users, test_role_assign)
 ├── internal/
 │   ├── config/          # Konfigurace (envconfig)
-│   ├── auth/            # Keycloak OIDC
+│   ├── auth/            # Keycloak OIDC + Service Account
+│   │   ├── auth.go              # User authentication
+│   │   └── service_account.go   # Service account client
 │   ├── db/              # Database layer (sqlc generated)
+│   ├── keycloak/        # Keycloak Admin API client
+│   │   └── client.go            # Role management methods
 │   └── handler/         # HTTP handlery
+│       ├── handler.go           # Base handler
+│       ├── dashboard.go         # User dashboard
+│       ├── profile.go           # Profile edit
+│       ├── admin.go             # Admin API endpoints
+│       └── admin_users.go       # Admin user management UI
 ├── web/
 │   ├── templates/       # html/template soubory
-│   │   ├── layout.html  # Shared layout
+│   │   ├── layout.html         # Shared layout
 │   │   ├── home.html
 │   │   ├── dashboard.html
-│   │   └── profile.html
+│   │   ├── profile.html
+│   │   └── admin_users.html    # Admin user management
 │   └── static/          # (budoucí) CSS, JS, assets
 ├── migrations/          # SQL migrace
 │   ├── 001_initial_schema.sql
 │   ├── 002_allow_null_keycloak_id.sql
 │   ├── 002_import_old_data.sql
 │   └── rememberportal.sqlite3 (gitignored)
+├── docs/                # Dokumentace
+│   └── KEYCLOAK_SETUP.md        # Keycloak setup guide
 ├── data/                # SQLite databáze (gitignored)
 ├── sqlc.yaml            # sqlc konfigurace
 ├── go.mod
@@ -172,15 +190,20 @@ base48-portal/
 - [x] Dashboard s přehledem členství, plateb a poplatků
 - [x] Profile view/edit (realname, phone, alt_contact)
 
-### Fáze 2: Core features (ČÁSTEČNĚ DOKONČENO)
+### Fáze 2: Core features ✅ DOKONČENO (2025-11-17)
 - [x] User profile view/edit
 - [x] Payment history view (v dashboardu)
 - [x] Fee overview (v dashboardu)
-- [ ] Member listing (staff only)
-- [ ] Payment balance calculation improvements
+- [x] Member listing (admin only - /admin/users)
+- [x] Payment balance calculation improvements
 
-### Fáze 3: Admin features
-- [ ] Member state management
+### Fáze 3: Admin features ✅ DOKONČENO (2025-11-17)
+- [x] Keycloak service account integration
+- [x] Admin user management UI (/admin/users)
+- [x] Role management (assign/remove via Admin API)
+- [x] Admin API endpoints (JSON)
+- [x] Automated tasks support (cron mode)
+- [ ] Member state management (DB level)
 - [ ] Manual payment assignment
 - [ ] Level management
 
@@ -202,10 +225,16 @@ DATABASE_URL=file:./data/portal.db?_fk=1
 # SQLite s foreign key constraints enabled
 
 # Keycloak
-KEYCLOAK_URL=https://sso.base48.cz
-KEYCLOAK_REALM=master
+KEYCLOAK_URL=https://auth.base48.cz
+KEYCLOAK_REALM=base48
+
+# Web application client (user login)
 KEYCLOAK_CLIENT_ID=go-member-portal-dev
 KEYCLOAK_CLIENT_SECRET=your-secret-here
+
+# Service account client (automation, admin operations)
+KEYCLOAK_SERVICE_ACCOUNT_CLIENT_ID=go-member-portal-service
+KEYCLOAK_SERVICE_ACCOUNT_CLIENT_SECRET=your-service-secret
 
 # Session
 SESSION_SECRET=generate-with-openssl-rand-base64-32
@@ -242,16 +271,22 @@ Import automaticky:
 ## Implementované Features
 
 ### ✅ Authentication & Authorization
-- Keycloak OIDC SSO integrace
-- Session management (gorilla/sessions)
+- Keycloak OIDC SSO integrace (uživatelské přihlášení)
+- Keycloak Service Account (automatizace bez uživatele)
+- Dual client architecture (web + service account)
+- Session management (gorilla/sessions, bez token storage)
 - Auto-registration nových uživatelů
 - Auto-linking importovaných uživatelů
+- Role-based access control (`memberportal_admin`)
 
 ### ✅ User Management
 - Dashboard s přehledem členství
 - Profile edit (realname, phone, alt_contact)
 - Zobrazení stavu členství (accepted/awaiting/suspended/exmember/rejected)
 - Zobrazení úrovně členství a částky
+- Admin: přehled všech uživatelů (/admin/users)
+- Admin: Keycloak status (enabled/disabled/not linked)
+- Admin: zobrazení a správa rolí
 
 ### ✅ Payment & Fee Display
 - Historie plateb (datum, částka, zdroj)
@@ -265,16 +300,45 @@ Import automaticky:
 - 12 membership levels
 - Zachování všech dat (state, level, payments_id, atd.)
 
+### ✅ Admin & Automation
+- Admin UI pro správu uživatelů (/admin/users)
+- Admin API endpointy (JSON):
+  - GET /api/admin/users
+  - POST /api/admin/roles/assign
+  - POST /api/admin/roles/remove
+  - GET /api/admin/users/roles
+- Role whitelist security (`active_member`, `in_debt`)
+- Keycloak Admin API client (internal/keycloak/client.go)
+- Service account authentication
+- Test skripty (cmd/test/)
+- Cron mode examples (cmd/cron/update_debt_status.go)
+
 ### 🚧 TODO
-- Member listing (staff only)
-- Manual payment assignment (staff)
-- Level management (staff)
+- Manual payment assignment (admin)
+- Level management (admin)
+- Member state management (DB updates via admin)
 - Payment import z FIO API
 - Email notifikace
 
+## Security Features
+
+### ✅ Implementováno
+- **Session Security**: HttpOnly, Secure (HTTPS only), SameSite cookies
+- **No Token Leakage**: Tokeny nejsou uloženy v session ani odeslány klientovi
+- **Role Whitelist**: Admin může spravovat pouze `active_member` a `in_debt` role
+- **Authorization Middleware**: Double-check (RequireAuth + RequireAdmin)
+- **Service Account Isolation**: Service account token oddělen od user session
+- **SQL Injection Prevention**: sqlc type-safe queries
+
+### 🚧 TODO
+- CSRF protection
+- Rate limiting
+- Input sanitization/validation
+- Audit logging
+
 ---
 
-**Verze:** 0.2.0-alpha
-**Datum:** 2025-11-16
+**Verze:** 0.3.0-alpha
+**Datum:** 2025-11-17
 **Autor:** Base48 team
-**Status:** Funkční prototyp s importovanými daty
+**Status:** Funkční prototyp s admin rozhraním a Keycloak integrací

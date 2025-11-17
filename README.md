@@ -10,6 +10,8 @@ Member portál pro hackerspace Base48 s Keycloak SSO autentizací.
 - ✅ Správa členských profilů (základní UI)
 - ✅ Evidence plateb a poplatků (DB schema připraveno)
 - ✅ Flexibilní úrovně členství
+- ✅ Admin rozhraní pro správu uživatelů a rolí
+- ✅ Keycloak service account integrace pro automatizaci
 - ✅ Type-safe SQL (sqlc)
 - ✅ Pure Go SQLite driver (bez CGO)
 - ✅ Minimalistická architektura
@@ -36,8 +38,14 @@ cp .env.example .env
 # Nastav Keycloak credentials
 KEYCLOAK_URL=https://your-keycloak.com
 KEYCLOAK_REALM=your-realm
+
+# Web application client (pro přihlášení uživatelů)
 KEYCLOAK_CLIENT_ID=member-portal
 KEYCLOAK_CLIENT_SECRET=your-secret
+
+# Service account client (pro automatizaci a admin operace)
+KEYCLOAK_SERVICE_ACCOUNT_CLIENT_ID=member-portal-service
+KEYCLOAK_SERVICE_ACCOUNT_CLIENT_SECRET=your-service-secret
 
 # Vygeneruj session secret
 SESSION_SECRET=$(openssl rand -base64 32)
@@ -97,33 +105,61 @@ Když se importovaný uživatel poprvé přihlásí přes Keycloak:
 base48-portal/
 ├── cmd/
 │   ├── server/          # Main aplikace
-│   └── import/          # Import tool ze staré databáze
+│   ├── import/          # Import tool ze staré databáze
+│   ├── cron/            # Plánované úlohy (např. update_debt_status)
+│   └── test/            # Test skripty pro Keycloak integraci
 ├── internal/
-│   ├── auth/            # Keycloak OIDC
+│   ├── auth/            # Keycloak OIDC + service account
 │   ├── config/          # Environment konfigurace
 │   ├── db/              # Database queries (sqlc)
-│   └── handler/         # HTTP handlery
+│   ├── handler/         # HTTP handlery
+│   └── keycloak/        # Keycloak Admin API client
 ├── web/
 │   ├── templates/       # HTML templates
 │   └── static/          # CSS, JS, assets
 ├── migrations/          # SQL schema & migrations
+├── docs/                # Dokumentace (Keycloak setup)
 ├── sqlc.yaml            # sqlc konfigurace
 └── SPEC.md              # Detailní specifikace
 ```
 
 ## Keycloak Setup
 
+Portál používá **dva Keycloak klienty**:
+1. **Web client** - pro přihlášení uživatelů přes prohlížeč
+2. **Service account client** - pro automatizaci (cron úlohy, admin operace)
+
+### Web Application Client
+
 1. Vytvoř nový Client v Keycloak:
    - Client ID: `member-portal`
    - Client Protocol: `openid-connect`
    - Access Type: `confidential`
-   - Valid Redirect URIs: `http://localhost:8080/auth/callback`
+   - Valid Redirect URIs: `http://localhost:4848/auth/callback`
 
 2. Zkopíruj Client Secret z tab "Credentials"
 
-3. Nastav v `.env`:
-   - `KEYCLOAK_CLIENT_ID`
-   - `KEYCLOAK_CLIENT_SECRET`
+### Service Account Client
+
+1. Vytvoř další Client v Keycloak:
+   - Client ID: `member-portal-service`
+   - Client Protocol: `openid-connect`
+   - Access Type: `confidential`
+   - Service Accounts Enabled: `ON`
+
+2. Zkopíruj Client Secret z tab "Credentials"
+
+3. V tab "Service Account Roles", přiřaď:
+   - **realm-management** → `view-users`, `manage-users`
+
+### Nastavení rolí
+
+V Keycloak vytvoř tyto **realm roles**:
+- `active_member` - aktivní člen
+- `in_debt` - člen s dluhem
+- `memberportal_admin` - admin práva v portálu
+
+Viz detaily v [`docs/KEYCLOAK_SETUP.md`](docs/KEYCLOAK_SETUP.md)
 
 ## Development
 
@@ -162,9 +198,45 @@ Detaily viz `migrations/001_initial_schema.sql`
 - **Tailwind CSS** - Styling (plánováno)
 - **html/template** - Server-side rendering
 
+## Admin Features
+
+Po přihlášení jako admin (role `memberportal_admin`):
+- **GET /admin/users** - Webové rozhraní pro správu uživatelů
+  - Zobrazení všech uživatelů z DB
+  - Keycloak status (enabled/disabled/not linked)
+  - Aktuální role zobrazené jako badges
+  - Inline přiřazování/odebírání rolí
+
+API endpointy (JSON):
+- **GET /api/admin/users** - Seznam všech uživatelů s Keycloak info
+- **POST /api/admin/roles/assign** - Přiřadit roli uživateli
+- **POST /api/admin/roles/remove** - Odebrat roli uživateli
+- **GET /api/admin/users/roles** - Zobrazit role konkrétního uživatele
+
+Podporované role pro správu:
+- `active_member` - aktivní členství
+- `in_debt` - dluh na účtu
+
+## Automated Tasks (Cron)
+
+Service account umožňuje automatizované úlohy bez přihlášeného uživatele:
+
+```bash
+# Příklad: Update debt status based on balance
+go run cmd/cron/update_debt_status.go
+```
+
+Test skripty:
+```bash
+# Zobraz všechny uživatele v Keycloak
+go run cmd/test/list_users.go
+
+# Test přiřazení/odebrání role
+TEST_USER_ID=<keycloak-user-id> go run cmd/test/test_role_assign.go
+```
+
 ## TODO
 
-- [ ] Admin panel pro správu členů
 - [ ] Manuální přiřazování plateb
 - [ ] Import plateb z FIO API
 - [ ] Email notifikace
