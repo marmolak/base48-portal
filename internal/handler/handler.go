@@ -225,14 +225,59 @@ func (h *Handler) ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch user's membership level
+	level, err := h.queries.GetLevel(r.Context(), dbUser.LevelID)
+	if err != nil {
+		http.Error(w, "Failed to fetch level", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch user's payments
+	payments, err := h.queries.ListPaymentsByUser(r.Context(), sql.NullInt64{Int64: dbUser.ID, Valid: true})
+	if err != nil {
+		http.Error(w, "Failed to fetch payments", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch user's fees
+	fees, err := h.queries.ListFeesByUser(r.Context(), dbUser.ID)
+	if err != nil {
+		http.Error(w, "Failed to fetch fees", http.StatusInternalServerError)
+		return
+	}
+
+	// Calculate balance
+	balance, err := h.queries.GetUserBalance(r.Context(), db.GetUserBalanceParams{
+		UserID:   sql.NullInt64{Int64: dbUser.ID, Valid: true},
+		UserID_2: dbUser.ID,
+	})
+	if err != nil {
+		http.Error(w, "Failed to calculate balance", http.StatusInternalServerError)
+		return
+	}
+
+	// Calculate total paid (sum of all payments)
+	var totalPaid float64
+	for _, payment := range payments {
+		// Parse amount as float
+		var amount float64
+		fmt.Sscanf(payment.Amount, "%f", &amount)
+		totalPaid += amount
+	}
+
 	// Build Keycloak account URL
 	keycloakAccountURL := fmt.Sprintf("%s/realms/%s/account", h.config.KeycloakURL, h.config.KeycloakRealm)
 
 	data := map[string]interface{}{
-		"Title":             "My Profile",
-		"User":              user,
-		"DBUser":            dbUser,
-		"Success":           r.URL.Query().Get("success") == "1",
+		"Title":              "My Profile",
+		"User":               user,
+		"DBUser":             dbUser,
+		"Level":              level,
+		"Payments":           payments,
+		"Fees":               fees,
+		"Balance":            int64(balance),
+		"TotalPaid":          int64(totalPaid),
+		"Success":            r.URL.Query().Get("success") == "1",
 		"KeycloakAccountURL": keycloakAccountURL,
 	}
 

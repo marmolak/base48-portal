@@ -8,10 +8,11 @@ Member portál pro hackerspace Base48 s Keycloak SSO autentizací.
 
 - ✅ Keycloak OIDC SSO autentizace (funguje!)
 - ✅ Správa členských profilů (základní UI)
-- ✅ Evidence plateb a poplatků (DB schema připraveno)
+- ✅ Evidence plateb a poplatků (s importem ze staré databáze)
 - ✅ Flexibilní úrovně členství
 - ✅ Admin rozhraní pro správu uživatelů a rolí
 - ✅ Keycloak service account integrace pro automatizaci
+- ✅ Import historických dat
 - ✅ Type-safe SQL (sqlc)
 - ✅ Pure Go SQLite driver (bez CGO)
 - ✅ Minimalistická architektura
@@ -82,22 +83,32 @@ Pro import dat ze staré databáze:
 # 1. Zkopíruj starou databázi do migrations/
 cp /path/to/rememberportal.sqlite3 migrations/
 
-# 2. Zkompiluj a spusť import tool
-go build -o import.exe cmd/import/main.go
-./import.exe
+# 2. Vytvoř zálohu současné databáze (pokud existuje)
+cp data/portal.db data/portal.db.backup
+
+# 3. Spusť import skript
+sqlite3 data/portal.db < migrations/002_import_old_data.sql
 ```
 
-Import automaticky:
-- Naimportuje všechny levels (úrovně členství)
-- Naimportuje všechny uživatele s daty (email, jméno, telefon, stav, atd.)
-- Přeskočí duplicitní emaily (OR IGNORE)
-- Nastaví `keycloak_id` na NULL - bude napojen při prvním přihlášení
+**Co se importuje:**
+- ✅ Všechny levels (úrovně členství) - 12 úrovní
+- ✅ Všichni uživatelé s kompletními profily
+- ✅ Všechny platby (payments) včetně FIO JSON dat
+- ✅ Všechny poplatky (fees) - očekávané měsíční platby
+- ✅ Historická data od roku 2010
 
-Když se importovaný uživatel poprvé přihlásí přes Keycloak:
-1. Systém ho nenajde podle Keycloak ID (je NULL)
-2. Najde ho podle emailu
-3. Automaticky naváže Keycloak ID pomocí `LinkKeycloakID`
-4. Příště už ho najde podle Keycloak ID
+**Automatické mapování:**
+- Zachovává původní user ID pro konzistenci
+- Mapuje vztahy user → payments → fees
+- Orphaned payments (bez uživatele) se také importují
+- `keycloak_id` je NULL - naváže se při prvním přihlášení
+
+**Proces napojení Keycloak ID při prvním přihlášení:**
+1. Uživatel se přihlásí přes Keycloak (email: `user@example.com`)
+2. Systém ho nenajde podle Keycloak ID (je NULL)
+3. Najde ho podle emailu v tabulce users
+4. Automaticky naváže `keycloak_id` z OIDC tokenu
+5. Příště už ho najde rovnou podle Keycloak ID
 
 ## Project Structure
 
