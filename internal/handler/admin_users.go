@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/base48/member-portal/internal/db"
@@ -46,6 +47,13 @@ func (h *Handler) AdminUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
+	// Get filter and sort parameters from query string
+	filterState := r.URL.Query().Get("state")
+	filterKeycloak := r.URL.Query().Get("keycloak")
+	filterBalance := r.URL.Query().Get("balance")
+	filterSearch := strings.ToLower(r.URL.Query().Get("search"))
+	sortBy := r.URL.Query().Get("sort")
+
 	// Get all users from database
 	dbUsers, err := h.queries.ListUsers(ctx)
 	if err != nil {
@@ -70,7 +78,7 @@ func (h *Handler) AdminUsersHandler(w http.ResponseWriter, r *http.Request) {
 		keycloakUsers = make(map[string]KeycloakUserInfo)
 	}
 
-	// Build combined user list
+	// Build combined user list with filtering
 	userList := make([]AdminUserListItem, 0, len(dbUsers))
 
 	for _, dbUser := range dbUsers {
@@ -108,17 +116,112 @@ func (h *Handler) AdminUsersHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		// Apply filters
+		if !matchesFilters(item, filterState, filterKeycloak, filterBalance, filterSearch) {
+			continue
+		}
+
 		userList = append(userList, item)
 	}
 
+	// Apply sorting
+	sortUserList(userList, sortBy)
+
 	// Render template
 	data := map[string]interface{}{
-		"Title":    "Admin - Users",
-		"User":     user,
-		"UserList": userList,
+		"Title":          "Admin - Users",
+		"User":           user,
+		"UserList":       userList,
+		"FilterState":    filterState,
+		"FilterKeycloak": filterKeycloak,
+		"FilterBalance":  filterBalance,
+		"FilterSearch":   r.URL.Query().Get("search"), // Original case
+		"SortBy":         sortBy,
 	}
 
 	h.render(w, "admin_users.html", data)
+}
+
+// matchesFilters checks if a user item matches the given filter criteria
+func matchesFilters(item AdminUserListItem, state, keycloak, balance, search string) bool {
+	// Filter by state
+	if state != "" && item.DBUser.State != state {
+		return false
+	}
+
+	// Filter by Keycloak status
+	if keycloak != "" {
+		switch keycloak {
+		case "linked":
+			if !item.DBUser.KeycloakID.Valid || item.DBUser.KeycloakID.String == "" {
+				return false
+			}
+		case "not_linked":
+			if item.DBUser.KeycloakID.Valid && item.DBUser.KeycloakID.String != "" {
+				return false
+			}
+		case "enabled":
+			if item.KeycloakEnabled == nil || !*item.KeycloakEnabled {
+				return false
+			}
+		case "disabled":
+			if item.KeycloakEnabled == nil || *item.KeycloakEnabled {
+				return false
+			}
+		}
+	}
+
+	// Filter by balance
+	if balance != "" {
+		switch balance {
+		case "positive":
+			if item.Balance < 0 {
+				return false
+			}
+		case "negative":
+			if item.Balance >= 0 {
+				return false
+			}
+		}
+	}
+
+	// Filter by search (email or realname)
+	if search != "" {
+		emailMatch := strings.Contains(strings.ToLower(item.DBUser.Email), search)
+		nameMatch := item.DBUser.Realname.Valid && strings.Contains(strings.ToLower(item.DBUser.Realname.String), search)
+		if !emailMatch && !nameMatch {
+			return false
+		}
+	}
+
+	return true
+}
+
+// sortUserList sorts the user list based on the sort parameter
+func sortUserList(userList []AdminUserListItem, sortBy string) {
+	switch sortBy {
+	case "id_asc":
+		sort.Slice(userList, func(i, j int) bool {
+			return userList[i].DBUser.ID < userList[j].DBUser.ID
+		})
+	case "id_desc":
+		sort.Slice(userList, func(i, j int) bool {
+			return userList[i].DBUser.ID > userList[j].DBUser.ID
+		})
+	case "balance_asc":
+		sort.Slice(userList, func(i, j int) bool {
+			return userList[i].Balance < userList[j].Balance
+		})
+	case "balance_desc":
+		sort.Slice(userList, func(i, j int) bool {
+			return userList[i].Balance > userList[j].Balance
+		})
+	default:
+		// Default: sort by ID descending (newest members first)
+		sort.Slice(userList, func(i, j int) bool {
+			return userList[i].DBUser.ID > userList[j].DBUser.ID
+		})
+	}
 }
 
 // AdminUsersAPIHandler returns JSON list of users with Keycloak info

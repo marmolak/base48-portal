@@ -2,8 +2,66 @@
 <div class="container">
     <div class="header">
         <h1>Admin - User Management</h1>
-        <p>Total users: {{ len .UserList }}</p>
+        <p>Showing {{ len .UserList }} users</p>
     </div>
+
+    <!-- Filter Form -->
+    <form method="GET" action="/admin/users" class="filter-form">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label>Search:</label>
+                <input type="text" name="search" placeholder="Email or name..." value="{{ .FilterSearch }}" />
+            </div>
+
+            <div class="filter-group">
+                <label>State:</label>
+                <select name="state">
+                    <option value="">All</option>
+                    <option value="accepted" {{ if eq .FilterState "accepted" }}selected{{ end }}>Accepted</option>
+                    <option value="awaiting" {{ if eq .FilterState "awaiting" }}selected{{ end }}>Awaiting</option>
+                    <option value="suspended" {{ if eq .FilterState "suspended" }}selected{{ end }}>Suspended</option>
+                    <option value="rejected" {{ if eq .FilterState "rejected" }}selected{{ end }}>Rejected</option>
+                    <option value="exmember" {{ if eq .FilterState "exmember" }}selected{{ end }}>Ex-member</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Keycloak:</label>
+                <select name="keycloak">
+                    <option value="">All</option>
+                    <option value="linked" {{ if eq .FilterKeycloak "linked" }}selected{{ end }}>Linked</option>
+                    <option value="not_linked" {{ if eq .FilterKeycloak "not_linked" }}selected{{ end }}>Not Linked</option>
+                    <option value="enabled" {{ if eq .FilterKeycloak "enabled" }}selected{{ end }}>Enabled</option>
+                    <option value="disabled" {{ if eq .FilterKeycloak "disabled" }}selected{{ end }}>Disabled</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Balance:</label>
+                <select name="balance">
+                    <option value="">All</option>
+                    <option value="positive" {{ if eq .FilterBalance "positive" }}selected{{ end }}>Positive</option>
+                    <option value="negative" {{ if eq .FilterBalance "negative" }}selected{{ end }}>Negative</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Sort by:</label>
+                <select name="sort">
+                    <option value="">Default (ID High to Low)</option>
+                    <option value="id_asc" {{ if eq .SortBy "id_asc" }}selected{{ end }}>ID (Low to High)</option>
+                    <option value="id_desc" {{ if eq .SortBy "id_desc" }}selected{{ end }}>ID (High to Low)</option>
+                    <option value="balance_asc" {{ if eq .SortBy "balance_asc" }}selected{{ end }}>Balance (Low to High)</option>
+                    <option value="balance_desc" {{ if eq .SortBy "balance_desc" }}selected{{ end }}>Balance (High to Low)</option>
+                </select>
+            </div>
+
+            <div class="filter-group filter-buttons">
+                <button type="submit" class="btn btn-primary">Apply</button>
+                <a href="/admin/users" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+    </form>
 
     <table class="users-table">
         <thead>
@@ -106,6 +164,65 @@
 </div>
 
 <style>
+.filter-form {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+}
+
+.filter-group label {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.filter-group input {
+    min-width: 200px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    flex-direction: row !important;
+}
+
+.btn-secondary {
+    background-color: #999;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    display: inline-block;
+    font-size: 14px;
+}
+
+.btn-secondary:hover {
+    background-color: #777;
+}
+
 .users-table {
     width: 100%;
     border-collapse: collapse;
