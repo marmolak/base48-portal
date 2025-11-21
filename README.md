@@ -11,6 +11,8 @@ Member portál pro hackerspace Base48 s Keycloak SSO autentizací.
 - ✅ Evidence plateb a poplatků
 - ✅ Flexibilní úrovně členství
 - ✅ Admin rozhraní pro správu uživatelů a rolí (filtering, sorting)
+- ✅ FIO Bank integrace - automatická synchronizace plateb
+- ✅ Finanční přehled - správa nespárovaných příchozích plateb
 - ✅ Keycloak service account integrace pro automatizaci
 - ✅ Username synchronizace z Keycloak
 - ✅ Type-safe SQL (sqlc)
@@ -34,23 +36,7 @@ cd base48-portal
 cp .env.example .env
 ```
 
-2. **Edituj `.env`**
-```bash
-# Nastav Keycloak credentials
-KEYCLOAK_URL=https://your-keycloak.com
-KEYCLOAK_REALM=your-realm
-
-# Web application client (pro přihlášení uživatelů)
-KEYCLOAK_CLIENT_ID=member-portal
-KEYCLOAK_CLIENT_SECRET=your-secret
-
-# Service account client (pro automatizaci a admin operace)
-KEYCLOAK_SERVICE_ACCOUNT_CLIENT_ID=member-portal-service
-KEYCLOAK_SERVICE_ACCOUNT_CLIENT_SECRET=your-service-secret
-
-# Vygeneruj session secret
-SESSION_SECRET=$(openssl rand -base64 32)
-```
+2. **Edituj `.env`** - viz `.env.example` pro všechny potřebné proměnné
 
 3. **Inicializuj databázi**
 ```bash
@@ -90,12 +76,13 @@ base48-portal/
 ├── cmd/
 │   ├── server/          # Main aplikace
 │   ├── import/          # Import tool ze staré databáze
-│   ├── cron/            # Plánované úlohy (např. update_debt_status)
-│   └── test/            # Test skripty pro Keycloak integraci
+│   ├── cron/            # Plánované úlohy (sync_fio_payments, update_debt_status)
+│   └── test/            # Test skripty pro Keycloak a FIO API
 ├── internal/
 │   ├── auth/            # Keycloak OIDC + service account
 │   ├── config/          # Environment konfigurace
 │   ├── db/              # Database queries (sqlc)
+│   ├── fio/             # FIO Bank API client
 │   ├── handler/         # HTTP handlery
 │   └── keycloak/        # Keycloak Admin API client
 ├── web/
@@ -186,11 +173,17 @@ Detaily viz `migrations/001_initial_schema.sql`
 
 Po přihlášení jako admin (role `memberportal_admin`):
 
-**Webové rozhraní** (`/admin/users`):
+**Správa uživatelů** (`/admin/users`):
 - Zobrazení všech uživatelů s Keycloak statusem a rolemi
 - Filtering: state, Keycloak status, balance, search
 - Sorting: ID, balance (ascending/descending)
 - Inline správa rolí (assign/remove)
+
+**Finanční přehled** (`/admin/payments/unmatched`):
+- Přehled nespárovaných příchozích plateb z FIO
+- Kategorizace: prázdný VS, neznámý VS, sync chyby
+- Collapsible sekce pro lepší přehlednost
+- Statistiky a celkové částky
 
 **API endpointy**:
 - `GET /api/admin/users` - Seznam uživatelů
@@ -202,12 +195,18 @@ Po přihlášení jako admin (role `memberportal_admin`):
 Service account umožňuje automatizované úlohy bez přihlášeného uživatele:
 
 ```bash
-# Příklad: Update debt status based on balance
+# Synchronizace FIO plateb (doporučeno spouštět denně)
+./sync_fio_payments.exe
+
+# Aktualizace dluhového statusu na základě bilance
 go run cmd/cron/update_debt_status.go
 ```
 
 Test skripty:
 ```bash
+# Test FIO API připojení
+go run cmd/test/test_fio_api.go
+
 # Zobraz všechny uživatele v Keycloak
 go run cmd/test/list_users.go
 

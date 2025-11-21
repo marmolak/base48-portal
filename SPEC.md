@@ -26,7 +26,9 @@ Member portál pro hackerspace Base48. Reimplementace původního Haskell portá
 3. **Evidence plateb**
    - Zobrazení historie plateb
    - Zobrazení dlužných poplatků
+   - FIO Bank automatická synchronizace
    - Staff: manuální přiřazení plateb
+   - Admin: finanční přehled nespárovaných plateb
 
 4. **Úrovně členství**
    - Různé typy členství (Student, Full, Sponsor...)
@@ -98,13 +100,12 @@ NOTES:
 
 ## Scope - CO NEDĚLÁME ❌
 
-1. **Automatická synchronizace s bankou** - pouze manuální import (zatím)
-2. **Email notifikace** - bez SMTP integrace v MVP
-3. **Komplexní reporty** - pouze základní přehledy
-4. **API pro externí aplikace** - pouze interní UI
-5. **Bitcoin platby** - pouze fiat
-6. **Audit log** - RawData v Payment stačí
-7. **Multi-tenancy** - pouze Base48
+1. **Email notifikace** - bez SMTP integrace v MVP
+2. **Komplexní reporty** - pouze základní přehledy
+3. **API pro externí aplikace** - pouze interní UI
+4. **Bitcoin platby** - pouze fiat
+5. **Audit log** - RawData v Payment stačí
+6. **Multi-tenancy** - pouze Base48
 
 ## Technický stack
 
@@ -125,14 +126,16 @@ base48-portal/
 ├── cmd/
 │   ├── server/          # Main aplikace
 │   ├── import/          # Import tool ze staré databáze (rememberportal)
-│   ├── cron/            # Automatizované úlohy (update_debt_status)
-│   └── test/            # Test skripty (list_users, test_role_assign)
+│   ├── cron/            # Automatizované úlohy (sync_fio_payments, update_debt_status)
+│   └── test/            # Test skripty (test_fio_api, list_users, test_role_assign)
 ├── internal/
 │   ├── config/          # Konfigurace (envconfig)
 │   ├── auth/            # Keycloak OIDC + Service Account
 │   │   ├── auth.go              # User authentication
 │   │   └── service_account.go   # Service account client
 │   ├── db/              # Database layer (sqlc generated)
+│   ├── fio/             # FIO Bank API client
+│   │   └── client.go            # Transaction fetching
 │   ├── keycloak/        # Keycloak Admin API client
 │   │   └── client.go            # Role management methods
 │   └── handler/         # HTTP handlery
@@ -140,14 +143,16 @@ base48-portal/
 │       ├── dashboard.go         # User dashboard
 │       ├── profile.go           # Profile edit
 │       ├── admin.go             # Admin API endpoints
-│       └── admin_users.go       # Admin user management UI
+│       ├── admin_users.go       # Admin user management UI
+│       └── admin_payments.go    # Admin financial overview
 ├── web/
 │   ├── templates/       # html/template soubory
-│   │   ├── layout.html         # Shared layout
+│   │   ├── layout.html                   # Shared layout
 │   │   ├── home.html
 │   │   ├── dashboard.html
 │   │   ├── profile.html
-│   │   └── admin_users.html    # Admin user management
+│   │   ├── admin_users.html              # Admin user management
+│   │   └── admin_payments_unmatched.html # Admin financial overview
 │   └── static/          # (budoucí) CSS, JS, assets
 ├── migrations/          # SQL migrace
 │   ├── 001_initial_schema.sql
@@ -197,7 +202,7 @@ base48-portal/
 - [x] Member listing (admin only - /admin/users)
 - [x] Payment balance calculation improvements
 
-### Fáze 3: Admin features + Payment details ✅ DOKONČENO (2025-11-19)
+### Fáze 3: Admin features + Payment details ✅ DOKONČENO (2025-11-21)
 - [x] Keycloak service account integration
 - [x] Admin user management UI (/admin/users)
 - [x] Role management (assign/remove via Admin API)
@@ -208,6 +213,10 @@ base48-portal/
 - [x] Zobrazení členských příspěvků (fees) v profilu
 - [x] Kalkulace a zobrazení celkově zaplacené částky
 - [x] Vizuální indikace bilance (zelená/červená)
+- [x] FIO Bank API integrace
+- [x] Automatická synchronizace plateb z FIO (cron job)
+- [x] Admin finanční přehled nespárovaných plateb
+- [x] VS mapping na payments_id (ne user.id)
 - [ ] Member state management (DB level)
 - [ ] Manual payment assignment
 - [ ] Level management
@@ -240,6 +249,9 @@ KEYCLOAK_CLIENT_SECRET=your-secret-here
 # Service account client (automation, admin operations)
 KEYCLOAK_SERVICE_ACCOUNT_CLIENT_ID=go-member-portal-service
 KEYCLOAK_SERVICE_ACCOUNT_CLIENT_SECRET=your-service-secret
+
+# FIO Bank API
+BANK_FIO_TOKEN=your-fio-token
 
 # Session
 SESSION_SECRET=generate-with-openssl-rand-base64-32
