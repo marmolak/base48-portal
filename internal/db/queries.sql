@@ -7,6 +7,9 @@ SELECT * FROM users WHERE id = ? LIMIT 1;
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE email = ? LIMIT 1;
 
+-- name: GetUserByPaymentsID :one
+SELECT * FROM users WHERE payments_id = ? LIMIT 1;
+
 -- name: LinkKeycloakID :one
 UPDATE users SET
     keycloak_id = ?,
@@ -104,6 +107,23 @@ INSERT INTO payments (
     local_account, remote_account, identification, raw_data, staff_comment
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
+
+-- name: UpsertPayment :one
+INSERT INTO payments (
+    user_id, date, amount, kind, kind_id,
+    local_account, remote_account, identification, raw_data, staff_comment
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(kind, kind_id) DO UPDATE SET
+    date = excluded.date,
+    amount = excluded.amount,
+    local_account = excluded.local_account,
+    remote_account = excluded.remote_account,
+    identification = excluded.identification,
+    raw_data = excluded.raw_data
+RETURNING *;
+
+-- name: GetPaymentByKindAndID :one
+SELECT * FROM payments WHERE kind = ? AND kind_id = ? LIMIT 1;
 
 -- name: AssignPayment :one
 UPDATE payments SET

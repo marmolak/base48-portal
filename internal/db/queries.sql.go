@@ -308,6 +308,35 @@ func (q *Queries) GetPayment(ctx context.Context, id int64) (Payment, error) {
 	return i, err
 }
 
+const getPaymentByKindAndID = `-- name: GetPaymentByKindAndID :one
+SELECT id, user_id, date, amount, kind, kind_id, local_account, remote_account, identification, raw_data, staff_comment, created_at FROM payments WHERE kind = ? AND kind_id = ? LIMIT 1
+`
+
+type GetPaymentByKindAndIDParams struct {
+	Kind   string `json:"kind"`
+	KindID string `json:"kind_id"`
+}
+
+func (q *Queries) GetPaymentByKindAndID(ctx context.Context, arg GetPaymentByKindAndIDParams) (Payment, error) {
+	row := q.db.QueryRowContext(ctx, getPaymentByKindAndID, arg.Kind, arg.KindID)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Date,
+		&i.Amount,
+		&i.Kind,
+		&i.KindID,
+		&i.LocalAccount,
+		&i.RemoteAccount,
+		&i.Identification,
+		&i.RawData,
+		&i.StaffComment,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getUserBalance = `-- name: GetUserBalance :one
 SELECT
     COALESCE((SELECT SUM(CAST(p.amount AS REAL)) FROM payments p WHERE p.user_id = ?), 0) -
@@ -392,6 +421,36 @@ SELECT id, keycloak_id, email, username, realname, phone, alt_contact, level_id,
 
 func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID sql.NullString) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserByKeycloakID, keycloakID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.KeycloakID,
+		&i.Email,
+		&i.Username,
+		&i.Realname,
+		&i.Phone,
+		&i.AltContact,
+		&i.LevelID,
+		&i.LevelActualAmount,
+		&i.PaymentsID,
+		&i.DateJoined,
+		&i.KeysGranted,
+		&i.KeysReturned,
+		&i.State,
+		&i.IsCouncil,
+		&i.IsStaff,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserByPaymentsID = `-- name: GetUserByPaymentsID :one
+SELECT id, keycloak_id, email, username, realname, phone, alt_contact, level_id, level_actual_amount, payments_id, date_joined, keys_granted, keys_returned, state, is_council, is_staff, created_at, updated_at FROM users WHERE payments_id = ? LIMIT 1
+`
+
+func (q *Queries) GetUserByPaymentsID(ctx context.Context, paymentsID sql.NullString) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByPaymentsID, paymentsID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -999,6 +1058,65 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		&i.IsStaff,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertPayment = `-- name: UpsertPayment :one
+INSERT INTO payments (
+    user_id, date, amount, kind, kind_id,
+    local_account, remote_account, identification, raw_data, staff_comment
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(kind, kind_id) DO UPDATE SET
+    date = excluded.date,
+    amount = excluded.amount,
+    local_account = excluded.local_account,
+    remote_account = excluded.remote_account,
+    identification = excluded.identification,
+    raw_data = excluded.raw_data
+RETURNING id, user_id, date, amount, kind, kind_id, local_account, remote_account, identification, raw_data, staff_comment, created_at
+`
+
+type UpsertPaymentParams struct {
+	UserID         sql.NullInt64  `json:"user_id"`
+	Date           time.Time      `json:"date"`
+	Amount         string         `json:"amount"`
+	Kind           string         `json:"kind"`
+	KindID         string         `json:"kind_id"`
+	LocalAccount   string         `json:"local_account"`
+	RemoteAccount  string         `json:"remote_account"`
+	Identification string         `json:"identification"`
+	RawData        sql.NullString `json:"raw_data"`
+	StaffComment   sql.NullString `json:"staff_comment"`
+}
+
+func (q *Queries) UpsertPayment(ctx context.Context, arg UpsertPaymentParams) (Payment, error) {
+	row := q.db.QueryRowContext(ctx, upsertPayment,
+		arg.UserID,
+		arg.Date,
+		arg.Amount,
+		arg.Kind,
+		arg.KindID,
+		arg.LocalAccount,
+		arg.RemoteAccount,
+		arg.Identification,
+		arg.RawData,
+		arg.StaffComment,
+	)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Date,
+		&i.Amount,
+		&i.Kind,
+		&i.KindID,
+		&i.LocalAccount,
+		&i.RemoteAccount,
+		&i.Identification,
+		&i.RawData,
+		&i.StaffComment,
+		&i.CreatedAt,
 	)
 	return i, err
 }

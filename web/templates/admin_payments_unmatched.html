@@ -1,0 +1,446 @@
+{{ define "content" }}
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .category-section {
+            margin-bottom: 40px;
+        }
+
+        .category-section details {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .category-section summary {
+            cursor: pointer;
+            user-select: none;
+            list-style: none;
+        }
+
+        .category-section summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .category-header {
+            background: #f9fafb;
+            padding: 12px 15px;
+            border-left: 4px solid #2563eb;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+
+        .category-section summary:hover .category-header {
+            background: #f3f4f6;
+        }
+
+        .category-section details[open] .category-header {
+            margin-bottom: 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .category-content {
+            padding: 0;
+        }
+
+        .category-header.empty-vs {
+            border-left-color: #6b7280;
+        }
+
+        .category-header.invalid-vs {
+            border-left-color: #f59e0b;
+        }
+
+        .category-header.user-not-found {
+            border-left-color: #ef4444;
+        }
+
+        .category-header.sync-bug {
+            border-left-color: #8b5cf6;
+        }
+
+        .category-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            flex: 1;
+        }
+
+        .category-count {
+            background: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+        }
+
+        .collapse-indicator {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+
+        details[open] .collapse-indicator {
+            transform: rotate(180deg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        thead {
+            background: #f9fafb;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .amount {
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .date {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .vs {
+            font-family: 'Courier New', monospace;
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        .account {
+            font-size: 13px;
+        }
+
+        .reason {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-gray {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .badge-yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-purple {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .help-text {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+
+        .help-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e40af;
+        }
+
+        .help-list {
+            margin-left: 20px;
+            color: #1e40af;
+        }
+
+        .help-list li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/admin/users" class="back-link">← Zpět na přehled uživatelů</a>
+
+        <h1>Nespárované příchozí platby</h1>
+        <p class="subtitle">Příchozí platby, které se nepodařilo automaticky přiřadit k uživateli</p>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Počet plateb</div>
+                <div class="stat-value" style="color: #059669;">{{.CountPayments}}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Celková částka</div>
+                <div class="stat-value" style="color: #059669;">{{printf "%.2f" .TotalAmount}} Kč</div>
+            </div>
+        </div>
+
+        {{if eq .TotalCount 0}}
+        <div class="empty-state">
+            <div class="empty-state-icon">✓</div>
+            <h3>Žádné nespárované platby</h3>
+            <p>Všechny příchozí platby jsou správně přiřazeny k uživatelům.</p>
+        </div>
+        {{else}}
+
+        <!-- Empty VS -->
+        {{if gt .CountEmptyVS 0}}
+        <div class="category-section">
+            <details open>
+                <summary>
+                    <div class="category-header empty-vs">
+                        <span class="category-title">📝 Prázdný variabilní symbol</span>
+                        <span class="category-count">{{.CountEmptyVS}}</span>
+                        <span class="collapse-indicator">▼</span>
+                    </div>
+                </summary>
+                <div class="category-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Datum</th>
+                        <th>Částka</th>
+                        <th>Odesílatel</th>
+                        <th>Poznámka</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .UnmatchedList}}
+                    {{if eq .Category "empty_vs"}}
+                    <tr>
+                        <td>{{.Payment.ID}}</td>
+                        <td class="date">{{.Payment.Date.Format "02.01.2006"}}</td>
+                        <td class="amount incoming">+{{.Payment.Amount}} Kč</td>
+                        <td class="account">{{.Payment.RemoteAccount}}</td>
+                        <td class="reason">Bez VS - manuální přiřazení nutné</td>
+                    </tr>
+                    {{end}}
+                    {{end}}
+                </tbody>
+            </table>
+                </div>
+            </details>
+        </div>
+        {{end}}
+
+        <!-- User not found -->
+        {{if gt .CountUserNotFound 0}}
+        <div class="category-section">
+            <details>
+                <summary>
+                    <div class="category-header user-not-found">
+                        <span class="category-title">❌ Uživatel nenalezen</span>
+                        <span class="category-count">{{.CountUserNotFound}}</span>
+                        <span class="collapse-indicator">▼</span>
+                    </div>
+                </summary>
+                <div class="category-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Datum</th>
+                        <th>Částka</th>
+                        <th>VS / payments_id</th>
+                        <th>Odesílatel</th>
+                        <th>Poznámka</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .UnmatchedList}}
+                    {{if eq .Category "user_not_found"}}
+                    <tr>
+                        <td>{{.Payment.ID}}</td>
+                        <td class="date">{{.Payment.Date.Format "02.01.2006"}}</td>
+                        <td class="amount incoming">+{{.Payment.Amount}} Kč</td>
+                        <td><span class="vs">{{.Payment.Identification}}</span></td>
+                        <td class="account">{{.Payment.RemoteAccount}}</td>
+                        <td class="reason">Uživatel s payments_id '{{.Payment.Identification}}' neexistuje</td>
+                    </tr>
+                    {{end}}
+                    {{end}}
+                </tbody>
+            </table>
+                </div>
+            </details>
+        </div>
+        {{end}}
+
+        <!-- Sync bug -->
+        {{if gt .CountSyncBug 0}}
+        <div class="category-section">
+            <details>
+                <summary>
+                    <div class="category-header sync-bug">
+                        <span class="category-title">🐛 Možný sync problém</span>
+                        <span class="category-count">{{.CountSyncBug}}</span>
+                        <span class="collapse-indicator">▼</span>
+                    </div>
+                </summary>
+                <div class="category-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Datum</th>
+                        <th>Částka</th>
+                        <th>VS / payments_id</th>
+                        <th>Odesílatel</th>
+                        <th>Poznámka</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .UnmatchedList}}
+                    {{if eq .Category "sync_bug"}}
+                    <tr>
+                        <td>{{.Payment.ID}}</td>
+                        <td class="date">{{.Payment.Date.Format "02.01.2006"}}</td>
+                        <td class="amount incoming">+{{.Payment.Amount}} Kč</td>
+                        <td><span class="vs">{{.Payment.Identification}}</span></td>
+                        <td class="account">{{.Payment.RemoteAccount}}</td>
+                        <td class="reason">Uživatel s tímto payments_id existuje, ale platba není přiřazena!</td>
+                    </tr>
+                    {{end}}
+                    {{end}}
+                </tbody>
+            </table>
+                </div>
+            </details>
+        </div>
+        {{end}}
+
+        <div class="help-text">
+            <div class="help-title">💡 Co dělat s nespárovanými platbami?</div>
+            <ul class="help-list">
+                <li><strong>Prázdný VS:</strong> Kontaktuj odesílatele nebo přiřaď manuálně (funkce brzy)</li>
+                <li><strong>Neplatný VS:</strong> Zkontroluj, zda se nejedná o chybu v zadání</li>
+                <li><strong>Uživatel nenalezen:</strong> Možná chybí v databázi - zkontroluj import</li>
+                <li><strong>Sync problém:</strong> Znovu spusť FIO sync nebo kontaktuj správce</li>
+            </ul>
+        </div>
+
+        {{end}}
+    </div>
+{{ end }}

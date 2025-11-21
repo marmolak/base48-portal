@@ -2,7 +2,12 @@
 <div class="container">
     <div class="header">
         <h1>Admin - User Management</h1>
-        <p>Showing {{ len .UserList }} users</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <p>Showing {{ len .UserList }} users</p>
+            <a href="/admin/payments/unmatched" style="background: #ef4444; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">
+                🔍 Nespárované platby
+            </a>
+        </div>
     </div>
 
     <!-- Filter Form -->

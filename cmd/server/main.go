@@ -91,6 +91,7 @@ func main() {
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(authenticator.RequireAuth)
 		r.Get("/users", h.RequireAdmin(h.AdminUsersHandler))
+		r.Get("/payments/unmatched", h.RequireAdmin(h.AdminUnmatchedPaymentsHandler))
 	})
 
 	// Admin API routes (requires memberportal_admin role)
