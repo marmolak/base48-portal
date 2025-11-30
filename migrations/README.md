@@ -108,28 +108,8 @@ Unified logging pro všechny subsystémy (email, fio_sync, cron).
 sqlite3 data/portal.db < migrations/003_system_logs.sql
 ```
 
-## Email Systém
-
-**SMTP konfigurace** (`.env`):
-```bash
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USERNAME=noreply@base48.cz
-SMTP_PASSWORD=your-password
-SMTP_FROM=Base48 <noreply@base48.cz>
-```
-
-**Scénáře:** Welcome, Negative Balance, Debt Warning (>2× fee), Membership Suspended
-
-**Testování:** [MailHog](https://github.com/mailhog/MailHog) - `docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog`
-
 ## Import dat ze staré databáze
 
 Klíčové změny: `altcontact`→`alt_contact`, `state` lowercase, `keycloak_id` NULL (napojí se při prvním loginu)
 
 **Automatické napojení Keycloak:** První login najde usera podle emailu a naváže `keycloak_id`
-
-## Best Practices
-
-- Vždy backup před migrací: `cp data/portal.db data/portal.db.backup`
-- Kontroluj integrity: `sqlite3 data/portal.db "PRAGMA integrity_check;"`

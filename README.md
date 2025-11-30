@@ -1,38 +1,33 @@
-# Base48 Member Portal
+# Base48 Go Member Portal
 
-Member portál pro hackerspace Base48 s Keycloak SSO autentizací.
+Členský portál brněnského hackerspace Base48.
 
-**Status:** 🚧 Active Development - Fáze 3 (Admin features) dokončena
+**Stav:** 🚧 Aktivní vývoj.
 
-## Features
+## Fičurky
 
-- ✅ Keycloak OIDC SSO autentizace
-- ✅ Správa členských profilů s přehledem plateb a bilance
-- ✅ Evidence plateb a poplatků
-- ✅ Flexibilní úrovně členství
-- ✅ Admin rozhraní pro správu uživatelů a rolí (filtering, sorting)
-- ✅ FIO Bank integrace - automatická synchronizace plateb
-- ✅ Finanční přehled - správa nespárovaných příchozích plateb
-- ✅ Keycloak service account integrace pro automatizaci
-- ✅ Username synchronizace z Keycloak
-- ✅ Email systém (welcome, debt warnings, member notifications)
-- ✅ Automatizované měsíční poplatky s email notifikacemi
-- ✅ Type-safe SQL (sqlc)
-- ✅ Pure Go SQLite driver (bez CGO)
-- 🔜 Keycloak-less mode je plánován
+- ✅ Jednoduchá Go technologická základna
+- ✅ Členům poskytuje informace a umožňuje spravovat profil a členství
+- ✅ Automaticky čte a páruje platby z FIO Banky
+- ✅ Automaticky řeší měsíční členské příspěvky
+- ✅ Použivá Keycloak jako zdroj identit
+- ✅ Správcům poskytuje administrativní webové rozraní pro správu uživatelů, plateb, fundraisingu, nastavení....
+- 🔜 Email systém (uvítání, instrukce k platbě, upomínky apod...)
+- 🔜 Režim fungující bez Keycloak IDP
+- Viz github issues.
 
-## Quick Start
+## Návod ke spuštění
 
-### Prerequisites
+### Předpoklady
 
 - Go 1.21+ (testováno na 1.24.0)
 - Keycloak server s nakonfigurovaným realm a clientem
 - SQLite3 CLI (pro inicializaci DB)
 
-### Setup & Run
+### Nastavení a spuštění
 
 ```bash
-# 1. Setup (dependencies + config)
+# 1. Setup (závislosti + config)
 make setup
 
 # 2. Inicializuj databázi
@@ -51,26 +46,7 @@ make dev         # s hot reload (air)
 
 Server běží na `http://localhost:4848` (nebo PORT z .env)
 
-### Cross-platform Notes
-
-**Linux/macOS:**
-- Makefile příkazy fungují nativně
-- Binary: `./portal`
-
-**Windows:**
-- Použij Git Bash nebo WSL pro Makefile
-- Binary: `./portal.exe`
-- Alternativa: `go run cmd/server/main.go`
-
-### První přihlášení
-
-Při prvním přihlášení existujícího uživatele přes Keycloak:
-1. Systém najde uživatele podle emailu
-2. Automaticky naváže `keycloak_id` z OIDC tokenu
-3. Synchronizuje username z Keycloak `preferred_username`
-4. Další přihlášení už probíhá přímo přes Keycloak ID
-
-## Project Structure
+## Struktura projektu
 
 ```
 base48-portal/
@@ -133,7 +109,7 @@ V Keycloak vytvoř tyto **realm roles**:
 
 Viz detaily v [`docs/KEYCLOAK_SETUP.md`](docs/KEYCLOAK_SETUP.md)
 
-## Development
+## Vývoj
 
 ```bash
 make dev          # Run s hot reload (air)
@@ -164,27 +140,6 @@ Detaily viz `migrations/001_initial_schema.sql`
 - **Tailwind CSS** - Styling (plánováno)
 - **html/template** - Server-side rendering
 
-## Admin Features
-
-Po přihlášení jako admin (role `memberportal_admin`):
-
-**Správa uživatelů** (`/admin/users`):
-- Zobrazení všech uživatelů s Keycloak statusem a rolemi
-- Filtering: state, Keycloak status, balance, search
-- Sorting: ID, balance (ascending/descending)
-- Inline správa rolí (assign/remove)
-
-**Finanční přehled** (`/admin/payments/unmatched`):
-- Přehled nespárovaných příchozích plateb z FIO
-- Kategorizace: prázdný VS, neznámý VS, sync chyby
-- Collapsible sekce pro lepší přehlednost
-- Statistiky a celkové částky
-
-**API endpointy**:
-- `GET /api/admin/users` - Seznam uživatelů
-- `POST /api/admin/roles/assign` - Přiřadit roli
-- `POST /api/admin/roles/remove` - Odebrat roli
-
 ## Automated Tasks (Cron)
 
 Service account umožňuje automatizované úlohy bez přihlášeného uživatele:
@@ -195,16 +150,7 @@ make build-all
 
 # Synchronizace FIO plateb (doporučeno spouštět denně)
 ./sync_fio_payments
-
-# Aktualizace dluhového statusu
-./update_debt_status
-
-# Test skripty
-go run cmd/test/test_fio_api.go
-go run cmd/test/list_users.go
-TEST_USER_ID=<keycloak-user-id> go run cmd/test/test_role_assign.go
 ```
-
 ---
 
 Více informací viz `SPEC.md` pro detaily o architektuře a principech.
