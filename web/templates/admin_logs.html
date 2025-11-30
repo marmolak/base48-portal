@@ -3,7 +3,7 @@
     <div class="sm:flex sm:items-center">
         <div class="sm:flex-auto">
             <h1 class="text-2xl font-semibold text-gray-900">Systémové logy</h1>
-            <p class="mt-2 text-sm text-gray-700">Unified logging ze všech subsystémů (email, cron, fio_sync, keycloak)</p>
+            <p class="mt-2 text-sm text-gray-700">Unified logging ze všech subsystémů aplikace</p>
         </div>
     </div>
 
@@ -14,10 +14,9 @@
                 <label class="block text-sm font-medium text-gray-700">Subsystém</label>
                 <select name="subsystem" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     <option value="">Všechny</option>
-                    <option value="email" {{if eq .Subsystem "email"}}selected{{end}}>Email</option>
-                    <option value="cron" {{if eq .Subsystem "cron"}}selected{{end}}>Cron</option>
-                    <option value="fio_sync" {{if eq .Subsystem "fio_sync"}}selected{{end}}>FIO Sync</option>
-                    <option value="keycloak" {{if eq .Subsystem "keycloak"}}selected{{end}}>Keycloak</option>
+                    {{range .Subsystems}}
+                    <option value="{{.}}" {{if eq $.Subsystem .}}selected{{end}}>{{.}}</option>
+                    {{end}}
                 </select>
             </div>
 
@@ -25,10 +24,9 @@
                 <label class="block text-sm font-medium text-gray-700">Level</label>
                 <select name="level" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     <option value="">Všechny</option>
-                    <option value="success" {{if eq .Level "success"}}selected{{end}}>Success</option>
-                    <option value="info" {{if eq .Level "info"}}selected{{end}}>Info</option>
-                    <option value="warning" {{if eq .Level "warning"}}selected{{end}}>Warning</option>
-                    <option value="error" {{if eq .Level "error"}}selected{{end}}>Error</option>
+                    {{range .Levels}}
+                    <option value="{{.}}" {{if eq $.Level .}}selected{{end}}>{{.}}</option>
+                    {{end}}
                 </select>
             </div>
 

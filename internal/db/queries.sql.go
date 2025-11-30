@@ -284,6 +284,60 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getDistinctLevels = `-- name: GetDistinctLevels :many
+SELECT DISTINCT level FROM system_logs ORDER BY level
+`
+
+func (q *Queries) GetDistinctLevels(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getDistinctLevels)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var level string
+		if err := rows.Scan(&level); err != nil {
+			return nil, err
+		}
+		items = append(items, level)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDistinctSubsystems = `-- name: GetDistinctSubsystems :many
+SELECT DISTINCT subsystem FROM system_logs ORDER BY subsystem
+`
+
+func (q *Queries) GetDistinctSubsystems(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getDistinctSubsystems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var subsystem string
+		if err := rows.Scan(&subsystem); err != nil {
+			return nil, err
+		}
+		items = append(items, subsystem)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFee = `-- name: GetFee :one
 SELECT id, user_id, level_id, period_start, amount, created_at FROM fees WHERE id = ? LIMIT 1
 `

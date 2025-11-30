@@ -65,6 +65,19 @@ func (h *Handler) AdminLogsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get distinct subsystems and levels for filter dropdowns
+	subsystems, err := h.queries.GetDistinctSubsystems(ctx)
+	if err != nil {
+		// Don't fail if this errors, just use empty list
+		subsystems = []string{}
+	}
+
+	levels, err := h.queries.GetDistinctLevels(ctx)
+	if err != nil {
+		// Don't fail if this errors, just use empty list
+		levels = []string{}
+	}
+
 	// Get DBUser for layout
 	dbUser, _ := h.queries.GetUserByKeycloakID(ctx, sql.NullString{
 		String: user.ID,
@@ -72,14 +85,16 @@ func (h *Handler) AdminLogsHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	data := map[string]interface{}{
-		"Title":     "Systémové logy",
-		"User":      user,
-		"DBUser":    dbUser,
-		"Logs":      logs,
-		"Subsystem": subsystem,
-		"Level":     level,
-		"UserID":    userIDStr,
-		"Limit":     limit,
+		"Title":       "Systémové logy",
+		"User":        user,
+		"DBUser":      dbUser,
+		"Logs":        logs,
+		"Subsystems":  subsystems,
+		"Levels":      levels,
+		"Subsystem":   subsystem,
+		"Level":       level,
+		"UserID":      userIDStr,
+		"Limit":       limit,
 	}
 
 	h.render(w, "admin_logs.html", data)

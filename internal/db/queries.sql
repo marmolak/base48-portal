@@ -206,3 +206,9 @@ WHERE (? = '' OR subsystem = ?)
   AND (? = '' OR level = ?)
   AND (? = 0 OR user_id = ?)
 ORDER BY created_at DESC LIMIT ?;
+
+-- name: GetDistinctSubsystems :many
+SELECT DISTINCT subsystem FROM system_logs ORDER BY subsystem;
+
+-- name: GetDistinctLevels :many
+SELECT DISTINCT level FROM system_logs ORDER BY level;
