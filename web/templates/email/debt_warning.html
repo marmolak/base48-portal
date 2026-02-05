@@ -96,6 +96,12 @@
             Variabilní symbol: <strong>{{.PaymentsID}}</strong><br>
             Částka k úhradě: <strong>{{printf "%.0f" (- .Balance)}} Kč</strong> (nebo alespoň část)<br>
             Zpráva pro příjemce: <em>Úhrada členského příspěvku</em>
+            {{if .PaymentQRCode}}
+            <div style="margin-top: 15px; text-align: center;">
+                <img src="{{.PaymentQRCode}}" alt="QR platba" width="180" height="180" style="border: 1px solid #e5e7eb; border-radius: 8px;">
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #6b7280;">Naskenuj QR kód v bankovní aplikaci</p>
+            </div>
+            {{end}}
         </div>
 
         <a href="{{.PortalURL}}/profile" class="button">Zobrazit detail v portálu</a>

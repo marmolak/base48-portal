@@ -13,6 +13,7 @@ import (
 	"github.com/base48/member-portal/internal/config"
 	"github.com/base48/member-portal/internal/db"
 	"github.com/base48/member-portal/internal/email"
+	"github.com/base48/member-portal/internal/qrpay"
 )
 
 // Automatické vytváření měsíčních poplatků pro všechny aktivní členy
@@ -40,7 +41,8 @@ func main() {
 	defer database.Close()
 
 	queries := db.New(database)
-	emailClient := email.New(cfg, queries)
+	qrService := qrpay.NewService(cfg.BankIBAN, cfg.BankBIC)
+	emailClient := email.New(cfg, queries, qrService)
 	ctx := context.Background()
 
 	// Získáme první den aktuálního měsíce

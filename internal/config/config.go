@@ -25,6 +25,8 @@ type Config struct {
 
 	// FIO Bank
 	BankFIOToken string
+	BankIBAN     string
+	BankBIC      string
 
 	// Session
 	SessionSecret string
@@ -49,6 +51,8 @@ func Load() (*Config, error) {
 		KeycloakServiceAccountClientID:     getEnv("KEYCLOAK_SERVICE_ACCOUNT_CLIENT_ID", ""),
 		KeycloakServiceAccountClientSecret: getEnv("KEYCLOAK_SERVICE_ACCOUNT_CLIENT_SECRET", ""),
 		BankFIOToken:                       getEnv("BANK_FIO_TOKEN", ""),
+		BankIBAN:                           getEnv("BANK_IBAN", ""),
+		BankBIC:                            getEnv("BANK_BIC", ""),
 		SessionSecret:                      getEnv("SESSION_SECRET", ""),
 		SMTPHost:                           getEnv("SMTP_HOST", ""),
 		SMTPPort:                           getEnvInt("SMTP_PORT", 587),

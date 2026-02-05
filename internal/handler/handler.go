@@ -11,6 +11,7 @@ import (
 	"github.com/base48/member-portal/internal/config"
 	"github.com/base48/member-portal/internal/db"
 	"github.com/base48/member-portal/internal/email"
+	"github.com/base48/member-portal/internal/qrpay"
 )
 
 // Handler holds dependencies for HTTP handlers
@@ -21,6 +22,7 @@ type Handler struct {
 	config         *config.Config
 	serviceAccount *auth.ServiceAccountClient
 	emailClient    *email.Client
+	qrpayService   *qrpay.Service
 }
 
 // New creates a new Handler instance
@@ -44,8 +46,14 @@ func New(authenticator *auth.Authenticator, database *sql.DB, cfg *config.Config
 		}
 	}
 
-	// Initialize email client
-	emailClient := email.New(cfg, queries)
+	// Initialize QR payment service
+	qrService := qrpay.NewService(cfg.BankIBAN, cfg.BankBIC)
+	if !qrService.IsConfigured() {
+		fmt.Println("⚠ WARNING: BANK_IBAN not configured - QR payment codes will be unavailable")
+	}
+
+	// Initialize email client (with QR service for payment codes in emails)
+	emailClient := email.New(cfg, queries, qrService)
 
 	// Note: templates is set to nil, we'll parse on each request
 	// This is simpler than managing template name conflicts
@@ -56,6 +64,7 @@ func New(authenticator *auth.Authenticator, database *sql.DB, cfg *config.Config
 		config:         cfg,
 		serviceAccount: serviceAccount,
 		emailClient:    emailClient,
+		qrpayService:   qrService,
 	}, nil
 }
 

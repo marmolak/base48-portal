@@ -7,17 +7,20 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math"
 	"net/smtp"
 	"path/filepath"
 
 	"github.com/base48/member-portal/internal/config"
 	"github.com/base48/member-portal/internal/db"
+	"github.com/base48/member-portal/internal/qrpay"
 )
 
 // Client handles email sending with templates and logging
 type Client struct {
-	config  *config.Config
-	queries *db.Queries
+	config       *config.Config
+	queries      *db.Queries
+	qrpayService *qrpay.Service
 }
 
 // SendParams contains parameters for sending a templated email
@@ -30,10 +33,11 @@ type SendParams struct {
 }
 
 // New creates a new email client
-func New(cfg *config.Config, queries *db.Queries) *Client {
+func New(cfg *config.Config, queries *db.Queries, qrService *qrpay.Service) *Client {
 	return &Client{
-		config:  cfg,
-		queries: queries,
+		config:       cfg,
+		queries:      queries,
+		qrpayService: qrService,
 	}
 }
 
@@ -148,6 +152,19 @@ func (c *Client) SendNegativeBalance(ctx context.Context, user *db.User, balance
 		"PortalURL":  c.config.BaseURL,
 	}
 
+	// Generate QR payment code if possible
+	if c.qrpayService != nil && c.qrpayService.IsConfigured() && user.PaymentsID.Valid && user.PaymentsID.String != "" {
+		qrCode, err := c.qrpayService.GeneratePaymentQR(qrpay.GenerateParams{
+			Amount:         math.Abs(balance),
+			VariableSymbol: user.PaymentsID.String,
+			Message:        "CLENSKY PRISPEVEK BASE48",
+			Size:           200,
+		})
+		if err == nil {
+			data["PaymentQRCode"] = template.URL(qrCode)
+		}
+	}
+
 	return c.SendTemplated(ctx, SendParams{
 		UserID:       sql.NullInt64{Int64: user.ID, Valid: true},
 		Recipient:    user.Email,
@@ -165,6 +182,19 @@ func (c *Client) SendDebtWarning(ctx context.Context, user *db.User, balance flo
 		"MonthlyFee": monthlyFee,
 		"PaymentsID": user.PaymentsID.String,
 		"PortalURL":  c.config.BaseURL,
+	}
+
+	// Generate QR payment code if possible
+	if c.qrpayService != nil && c.qrpayService.IsConfigured() && user.PaymentsID.Valid && user.PaymentsID.String != "" {
+		qrCode, err := c.qrpayService.GeneratePaymentQR(qrpay.GenerateParams{
+			Amount:         math.Abs(balance),
+			VariableSymbol: user.PaymentsID.String,
+			Message:        "CLENSKY PRISPEVEK BASE48",
+			Size:           200,
+		})
+		if err == nil {
+			data["PaymentQRCode"] = template.URL(qrCode)
+		}
 	}
 
 	return c.SendTemplated(ctx, SendParams{

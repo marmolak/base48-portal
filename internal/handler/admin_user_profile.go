@@ -5,11 +5,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/base48/member-portal/internal/auth"
 	"github.com/base48/member-portal/internal/db"
+	"github.com/base48/member-portal/internal/qrpay"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -144,27 +147,73 @@ func (h *Handler) buildProfileData(ctx context.Context, targetDBUser *db.User, t
 		return nil, fmt.Errorf("failed to calculate balance: %w", err)
 	}
 
-	// Calculate total paid (sum of all payments)
+	// Calculate total paid (sum of all payments) and filter small payments for display
 	var totalPaid float64
+	var displayPayments []db.Payment
 	for _, payment := range payments {
 		var amount float64
 		fmt.Sscanf(payment.Amount, "%f", &amount)
 		totalPaid += amount
+		// Only show payments >= 5 Kč in the table (small amounts like interest clutter the view)
+		if amount >= 5 {
+			displayPayments = append(displayPayments, payment)
+		}
 	}
 
 	// Build Keycloak account URL
 	keycloakAccountURL := fmt.Sprintf("%s/realms/%s/account", h.config.KeycloakURL, h.config.KeycloakRealm)
 
+	// Generate QR payment code if user has PaymentsID (variable symbol) and has debt
+	var paymentQRCode string
+	var qrAmount float64
+	if h.qrpayService.IsConfigured() && targetDBUser.PaymentsID.Valid && targetDBUser.PaymentsID.String != "" {
+		// Generate QR for debt repayment or monthly fee
+		var qrMessage string
+
+		if balance < 0 {
+			// User has debt - generate QR for full debt amount
+			qrAmount = math.Abs(float64(balance))
+			qrMessage = "CLENSKY PRISPEVEK BASE48"
+		} else {
+			// No debt - generate QR for monthly fee
+			var levelAmount float64
+			fmt.Sscanf(level.Amount, "%f", &levelAmount)
+			// Use custom amount if set and higher than level minimum
+			var customAmount float64
+			fmt.Sscanf(targetDBUser.LevelActualAmount, "%f", &customAmount)
+			if customAmount > levelAmount {
+				qrAmount = customAmount
+			} else {
+				qrAmount = levelAmount
+			}
+			qrMessage = "CLENSKY PRISPEVEK BASE48"
+		}
+
+		if qrAmount > 0 {
+			qrCode, err := h.qrpayService.GeneratePaymentQR(qrpay.GenerateParams{
+				Amount:         qrAmount,
+				VariableSymbol: targetDBUser.PaymentsID.String,
+				Message:        qrMessage,
+				Size:           200,
+			})
+			if err == nil {
+				paymentQRCode = qrCode
+			}
+		}
+	}
+
 	return map[string]interface{}{
 		"ViewedUser":         targetUser,    // The user being viewed (renamed for clarity)
 		"TargetDBUser":       targetDBUser,  // The user being viewed (DB record)
 		"Level":              level,
-		"Payments":           payments,
+		"Payments":           displayPayments, // Filtered: only payments >= 5 Kč
 		"Fees":               fees,
 		"Balance":            float64(balance),
 		"TotalPaid":          int64(totalPaid),
 		"KeycloakAccountURL": keycloakAccountURL,
 		"IsAdminView":        false, // Default, will be overridden if admin view
+		"PaymentQRCode":      template.URL(paymentQRCode), // Mark as safe URL for template
+		"QRAmount":           qrAmount,
 	}, nil
 }
 

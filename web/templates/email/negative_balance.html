@@ -77,6 +77,12 @@
             Číslo účtu: <strong>2800691518/2010</strong> (Fio banka)<br>
             Variabilní symbol: <strong>{{.PaymentsID}}</strong><br>
             Zpráva pro příjemce: <em>Členský příspěvek Base48</em>
+            {{if .PaymentQRCode}}
+            <div style="margin-top: 15px; text-align: center;">
+                <img src="{{.PaymentQRCode}}" alt="QR platba" width="180" height="180" style="border: 1px solid #e5e7eb; border-radius: 8px;">
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #6b7280;">Naskenuj QR kód v bankovní aplikaci</p>
+            </div>
+            {{end}}
         </div>
 
         <p><strong>Důležité:</strong> Použij svůj variabilní symbol ({{.PaymentsID}}), ať můžeme platbu automaticky přiřadit k tvému účtu.</p>
