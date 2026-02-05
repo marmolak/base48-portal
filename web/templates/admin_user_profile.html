@@ -102,6 +102,26 @@
             </div>
         </dl>
 
+        {{if .PaymentQRCode}}
+        <!-- QR Payment Code -->
+        <div class="mt-6 pt-6 border-t border-gray-200">
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <div class="flex-shrink-0">
+                    <img src="{{.PaymentQRCode}}" alt="QR platba" width="150" height="150" class="rounded-lg shadow-sm border border-gray-200">
+                </div>
+                <div class="text-center sm:text-left">
+                    <h3 class="text-sm font-medium text-gray-900">QR kód pro platbu</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        QR kód pro rychlou platbu členského příspěvku.
+                    </p>
+                    <p class="mt-2 text-sm {{if lt .Balance 0.0}}text-red-600 font-medium{{else}}text-gray-600{{end}}">
+                        Částka: {{printf "%.0f" .QRAmount}} Kč{{if lt .Balance 0.0}} (doplatek dluhu){{end}}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {{end}}
+
         <!-- Additional membership details -->
         <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 mt-4 pt-4 border-t border-gray-200">
             <div>
