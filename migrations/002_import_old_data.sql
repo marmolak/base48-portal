@@ -184,7 +184,23 @@ WHERE f.user IS NOT NULL
 ORDER BY f.period_start ASC;
 
 -- =============================================================================
--- PART 5: Cleanup and Summary
+-- PART 5: Fix Payment Identification
+-- =============================================================================
+-- Payments were manually assigned to users in the old system based on various
+-- heuristics (account number, message content, etc.). The balance calculation
+-- requires identification = payments_id, so we normalize all assigned payments
+-- to use the user's payments_id as identification.
+-- This preserves the historical assignment decisions while ensuring consistent
+-- balance calculation.
+
+-- Set identification to user's payments_id for all assigned payments
+UPDATE payments
+SET identification = (SELECT payments_id FROM users WHERE users.id = payments.user_id)
+WHERE user_id IS NOT NULL
+  AND EXISTS (SELECT 1 FROM users WHERE users.id = payments.user_id AND users.payments_id IS NOT NULL AND users.payments_id <> '');
+
+-- =============================================================================
+-- PART 6: Cleanup and Summary
 -- =============================================================================
 
 -- Drop temporary mapping table
