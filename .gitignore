@@ -5,6 +5,9 @@
 *.so
 *.dylib
 portal
+server
+sync_fio
+sync_fio_payments
 
 # Test binary
 *.test
@@ -37,6 +40,9 @@ data/
 *.swo
 *~
 
+# Claude Code
+.claude/settings.local.json
+
 # OS
 .DS_Store
 Thumbs.db
@@ -47,3 +53,6 @@ tmp/
 cursor_*.md
 import
 import.exe
+
+# Test files
+cmd/test/

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]> <html prefix="og: http://ogp.me/ns#" class="no-js ie6" dir="ltr" lang="en-US"> <![endif]-->
+<!--[if IE 7 ]>    <html prefix="og: http://ogp.me/ns#" class="no-js ie7" dir="ltr" lang="en-US"> <![endif]-->
+<!--[if IE 8 ]>    <html prefix="og: http://ogp.me/ns#" class="no-js ie8" dir="ltr" lang="en-US"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html prefix="og: http://ogp.me/ns#" class=" js flexbox canvas canvastext webgl no-touch geolocation postmessage no-websqldatabase indexeddb hashchange history draganddrop websockets rgba hsla multiplebgs backgroundsize borderimage borderradius boxshadow textshadow opacity cssanimations csscolumns cssgradients no-cssreflections csstransforms csstransforms3d csstransitions fontface generatedcontent video audio localstorage sessionstorage webworkers no-applicationcache svg inlinesvg smil svgclippaths" dir="ltr" lang="en-US"><div class="fit-vids-style">­<style>               .fluid-width-video-wrapper {                 width: 100%;                              position: relative;                       padding: 0;                            }                                                                                   .fluid-width-video-wrapper iframe,        .fluid-width-video-wrapper object,        .fluid-width-video-wrapper embed {           position: absolute;                       top: 0;                                   left: 0;                                  width: 100%;                              height: 100%;                          }                                       </style></div><script type="text/javascript" async="" src="QR_platebni_kod_specifikace_files/google-analytics_ga.js"></script><script async="" src="QR_platebni_kod_specifikace_files/google-analytics_analytics.js"></script><!--<![endif]--><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+
+<!-- Facebook Sharing Hints //-->
+<meta name="og:title" content="QR Platba - Konec přepisování platebních údajů z faktur.">
+<meta name="og:type" content="website">
+<meta name="og:image" content="https://qr-platba.cz/wp-content/uploads/QR_code_1_to_many_keys2.jpg">
+<meta name="og:url" content="https://qr-platba.cz/">
+<link rel="image_src" type="image/jpg" href="https://qr-platba.cz/wp-content/uploads/QR_code_1_to_many_keys2.jpg">
+
+<title>Specifikace formátu | QR Platba</title>
+
+<link rel="shortcut icon" href="https://qr-platba.cz/wp-content/themes/responsive/favicon.png">
+<link rel="profile" href="https://gmpg.org/xfn/11">
+<link rel="pingback" href="https://qr-platba.cz/xmlrpc.php">
+
+
+<link rel="alternate" type="application/rss+xml" title="QR Platba » Feed" href="https://qr-platba.cz/feed/">
+<link rel="alternate" type="application/rss+xml" title="QR Platba » Comments Feed" href="https://qr-platba.cz/comments/feed/">
+<link rel="stylesheet" id="responsive-style-css" href="QR_platebni_kod_specifikace_files/style.css" type="text/css" media="all">
+<script>if (document.location.protocol != "https:") {document.location = document.URL.replace(/^http:/i, "https:");}</script><script type="text/javascript" src="QR_platebni_kod_specifikace_files/jquery.js"></script>
+<script type="text/javascript" src="QR_platebni_kod_specifikace_files/responsive-modernizr.js"></script>
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://qr-platba.cz/xmlrpc.php?rsd">
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="https://qr-platba.cz/wp-includes/wlwmanifest.xml"> 
+<link rel="prev" title="Pro výstavce" href="https://qr-platba.cz/pro-vystavce/">
+<link rel="next" title="Grafický manuál" href="https://qr-platba.cz/graficky-manual/">
+<meta name="generator" content="WordPress 3.4.2">
+<link rel="canonical" href="https://qr-platba.cz/pro-vyvojare/specifikace-formatu/">
+<!-- Custom CSS Styles -->
+<style type="text/css" media="screen">
+#featured>div>p,#featured>div>h2,#featured>div>div {
+   text-align: left;
+   padding-left: 30px;
+}
+
+#featured>div>h1 {
+   font-size: 48px;
+   text-align: left;
+   padding-left: 30px;
+}
+
+code {
+   font-family: "Courier New";
+}
+
+#qr-generate-form input {
+   width: 300px;
+}
+
+th {
+   font-weight: bold;
+   color: black;
+}
+
+.featured-title {
+   font-size: 32px !important;
+   line-height: 120%;
+}
+
+.featured-subtitle {
+   font-size: 22px !important;
+   line-height: 120%;
+}
+
+#featured p {
+   font-size: 16px !important;
+}
+
+#generation-button {
+   background-color: #1874cd; /* Dodger Blue */
+   background-image: -webkit-gradient(linear, left top, left bottom, from(#4f9eea), to(#1874cd));
+   background-image: -webkit-linear-gradient(top, #4f9eea, #1874cd);
+   background-image: -moz-linear-gradient(top, #4f9eea, #1874cd);
+   background-image: -ms-linear-gradient(top, #4f9eea, #1874cd);
+   background-image: -o-linear-gradient(top, #4f9eea, #1874cd);
+   background-image: linear-gradient(top, #4f9eea, #1874cd);
+   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#4f9eea, endColorstr=#1874cd);
+   border: 1px solid #115290;
+   color: #fff;
+   text-shadow: 0 1px 0 #115290;
+}
+</style>
+<!-- We need this for debugging -->
+<!-- Responsive 1.8.0.1 -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-343152-17', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</head>
+
+<body data-rsssl="1" class="page page-id-39 page-child parent-pageid-5 page-template page-template-full-width-page-php">
+                 
+<div id="container" class="hfeed">
+         
+        <div id="header">
+    
+                
+       
+	               
+        <div id="logo">
+            <a href="https://qr-platba.cz/"><img src="QR_platebni_kod_specifikace_files/Untitled.png" width="960" height="120" alt="QR Platba"></a>
+        </div><!-- end of #logo -->
+        
+    
+        
+        			    
+				<ul class="menu l_tinynav1"><li><a href="https://qr-platba.cz/" title="Home">Home</a></li><li class="page_item page-item-249"><a href="https://qr-platba.cz/generator/">Generátor QR Platby</a></li><li class="page_item page-item-23"><a href="https://qr-platba.cz/pro-uzivatele/">Pro uživatele</a></li><li class="page_item page-item-33"><a href="https://qr-platba.cz/pro-vystavce/">Pro výstavce</a></li><li class="page_item page-item-5 current_page_ancestor current_page_parent"><a href="https://qr-platba.cz/pro-vyvojare/">Pro vývojáře</a><ul class="children"><li class="page_item page-item-39 current_page_item"><a href="https://qr-platba.cz/pro-vyvojare/specifikace-formatu/">Specifikace formátu</a></li><li class="page_item page-item-194"><a href="https://qr-platba.cz/pro-vyvojare/generator/">Generátor QR Platby</a></li><li class="page_item page-item-9"><a href="https://qr-platba.cz/pro-vyvojare/restful-api/">Specifikace RESTful API</a></li><li class="page_item page-item-166"><a href="https://qr-platba.cz/pro-vyvojare/validator/">Validátor SPAYD řetězce</a></li><li class="page_item page-item-11"><a href="https://qr-platba.cz/pro-vyvojare/github/">Knihovny na GitHubu</a></li></ul></li><li class="page_item page-item-114"><a href="https://qr-platba.cz/graficky-manual/">Grafický manuál</a></li><li class="page_item page-item-131"><a href="https://qr-platba.cz/kontakt/">Kontakt</a></li></ul><select class="tinynav tinynav1"><option value="https://qr-platba.cz/">Home</option><option value="https://qr-platba.cz/generator/">Generátor QR Platby</option><option value="https://qr-platba.cz/pro-uzivatele/">Pro uživatele</option><option value="https://qr-platba.cz/pro-vystavce/">Pro výstavce</option><option value="https://qr-platba.cz/pro-vyvojare/">Pro vývojáře</option><option value="https://qr-platba.cz/pro-vyvojare/specifikace-formatu/" selected="selected">- Specifikace formátu</option><option value="https://qr-platba.cz/pro-vyvojare/generator/">- Generátor QR Platby</option><option value="https://qr-platba.cz/pro-vyvojare/restful-api/">- Specifikace RESTful API</option><option value="https://qr-platba.cz/pro-vyvojare/validator/">- Validátor SPAYD řetězce</option><option value="https://qr-platba.cz/pro-vyvojare/github/">- Knihovny na GitHubu</option><option value="https://qr-platba.cz/graficky-manual/">Grafický manuál</option><option value="https://qr-platba.cz/kontakt/">Kontakt</option></select>
+                
+             
+    </div><!-- end of #header -->
+        
+	    <div id="wrapper" class="clearfix">
+    
+        <div id="content-full" class="grid col-940">
+        
+
+		        
+        		        
+            <div id="post-39" class="post-39 page type-page status-publish hentry">
+                <h1 class="post-title">Specifikace formátu</h1>
+ 
+                 
+                
+                <div class="post-entry">
+                    <h4>Popis formátu QR platba</h4>
+<p>Formát řetězce je navržen tak, aby byl kompaktní co se velikosti 
+obsažených dat týče. Výhodou navrženého formátu je relativně dobrá 
+lidská čitelnost a potenciální rozšiřitelnost o specifické atributy.</p>
+<p>Řetězec může obsahovat libovolné znaky ze znakové sady&nbsp;ISO-8859-1 (znaková sada pro <a href="http://en.wikipedia.org/wiki/QR_code#Storage">binární QR kód</a>). Pro efektivní uložení do QR kódu doporučujeme sestavit řetězec tak, aby obsahoval pouze&nbsp;následující znaky:</p>
+<ul>
+<li>0–9</li>
+<li>A–Z [pouze velká písmena]</li>
+<li>mezera</li>
+<li>$, %, *, +, -, ., /, :</li>
+</ul>
+<p>Při zachování znaků výhradně z&nbsp;uvedené množiny bude použit tzv. 
+alfanumerický formát QR kódu. Množina znaků používaná v&nbsp;klíčích a 
+řídících strukturách navrženého formátu je proto volena právě 
+z&nbsp;této množiny tak, aby nebylo zabráněno dosažení maximální možné 
+efektivity uložení platebních informací do QR kódů. Bude-li 
+v&nbsp;hodnotě kteréhokoli pole použit znak z&nbsp;jiné množiny, než je 
+uvedena výše, bude použit tzv. binární formát QR kódu.</p>
+<p>QR kód by měl být pro tištěná media generován s&nbsp;úrovní kontroly chyb M (obnovitelnost 15%).</p>
+<p>Řetězec je vždy zahájen fixní hlavičkou SPD*. Následuje verze 
+protokolu (dvě čísla oddělená tečkou) ukončená hvězdičkou, např. 1.0*. 
+Následně&nbsp; řetězec obsahuje jednotlivé atributy platby ve formátu:</p>
+<ul>
+<li>${klíč}:${hodnota}*</li>
+</ul>
+<p>Tedy klíč je od hodnoty oddělen dvojtečkou, hodnota je zakončena 
+hvězdičkou. Pole ${hodnota} nesmí obsahovat hvězdičku (může být 
+v&nbsp;hodnotě zakódována jako %2A, jak je popsáno níže).</p>
+<table border="1" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td valign="top">${klíč}</td>
+<td valign="top">Klíč daného atributu je vždy zapsán velkými znaky z 
+množiny znaků [A-Z-]. Seznam přípustných klíčů (základní sada atributů) 
+je uveden v Tabulce 1. Formát může být rozšířen o proprietární klíče, 
+které mají např. lokální význam pro konkrétní lokalitu nebo instituci. 
+Sada již nyní uvažovaných rozšiřujících klíčů je uvedena v Tabulka 2. 
+Takovéto klíče jsou uvozeny znaky X-.</td>
+</tr>
+<tr>
+<td valign="top">${hodnota}</td>
+<td valign="top">Hodnota daného atributu může obsahovat libovolné znaky,
+ ale musí být zároveň v přípustném formátu pro dané pole – viz. popis 
+formátu hodnoty v Tabulce 1 a Tabulce 2. Hodnota nesmí být obklopena 
+bílými znaky (tj. za “:” a před “*” nesmí být bílé znaky) a nesmí 
+obsahovat znak * (hvězdička). Hodnota může obsahovat znak : 
+(dvojtečka).Hodnota může obsahovat speciální znaky kódované pomocí URL 
+kódování. Díky tomuto mechanismu je možné kódovat libovolné znaky z 
+UTF-8, hvězdičku je tedy možno do hodnoty zahrnout pomocí zápisu %2A.<p></p>
+<p>Pokud bude hodnota obsahovat více znaků, než připouští formát, bude 
+zpracován pouze formátem specifikovaný počet znaků zleva, ostatní budou 
+ignorovány.</p>
+<p>Pozn.: Podpora pro kódování speciálních znaků je základním parametrem
+ typově podobných formátů. V principu existuje několik přístupů, např. 
+HTML entity, back-slashing nebo touto specifikací zvolené URL kódování.</p></td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<h4>Tabulka 1 – základní parametry</h4>
+<table border="0" cellspacing="0" cellpadding="0">
+<thead>
+<tr>
+<td><strong>Klíč</strong></td>
+<td><strong>Povinný</strong></td>
+<td><strong>Délka</strong></td>
+<td><strong>Formát</strong></td>
+<td><strong>Hodnota</strong></td>
+<td><strong>Příklad zápisu klíče a hodnoty</strong></td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td valign="top">ACC</td>
+<td valign="top">ANO</td>
+<td valign="top">Max. 46 znaků<p></p>
+<p align="left">(IBAN+BIC)</p>
+</td>
+<td valign="top">IBAN, BIC</td>
+<td valign="top">Identifikace protistrany, která je složena ze dvou komponent oddělených znaménkem +<p></p>
+<p align="left">Tyto komponenty jsou:</p>
+<p align="left">číslo účtu ve formátu IBAN</p>
+<p align="left">identifikace banky ve formátu SWIFT dle ISO 9362.</p>
+<p align="left">Druhá komponenta (SWIFT) je přitom volitelná.</p>
+</td>
+<td valign="top">ACC:CZ5855000000001265098001+RZBCCZPP*<p></p>
+<p align="left">… a nebo (varianta bez čísla BIC):</p>
+<p align="left">ACC:CZ5855000000001265098001*</p>
+</td>
+</tr>
+<tr>
+<td valign="top">ALT-ACC</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 93 znaků<p></p>
+<p align="left">(2x pole ACC + oddělovač)</p>
+</td>
+<td valign="top">IBAN, BIC</td>
+<td valign="top">Seznam alternativních účtů k výchozímu účtu danému 
+hodnotou ACC. Jednotlivé záznamy mají stejný formát jako pole ACC a jsou
+ odděleny čárkou.<p></p>
+<p align="left">Klientské aplikace mohou tento seznam použít pro 
+zobrazení volby, na který účet se má platba odeslat, např. za účelem 
+optimalizace výše poplatků za převod.</p>
+<p align="left">Pro potřebu zachování akceptovatelné datové hustoty dat 
+na mediu typu QR kód se do pole nedoporučuje vkládat více než 2 
+alternativní čísla účtu.</p>
+</td>
+<td valign="top">ALT-ACC:CZ5855000000001265098001+RZBCCZPP,<br>
+CZ5855000000001265098001*</td>
+</tr>
+<tr>
+<td valign="top">AM</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 10 znaků<p></p>
+<p align="left">Pozn.: Odpovídá částce 9 999 999,99</p>
+</td>
+<td valign="top">Desetinné číslo.<p></p>
+<p align="left">Max. 2 desetinné cifry.</p>
+<p align="left">Tečka jako oddělovač desetinných míst.</p>
+</td>
+<td valign="top">Výše částky platby.</td>
+<td valign="top">AM:480.55*</td>
+</tr>
+<tr>
+<td valign="top">CC</td>
+<td valign="top">NE</td>
+<td valign="top">Právě 3 znaky</td>
+<td valign="top">ISO 4217 – délka 3 znaky, velká písmena.</td>
+<td valign="top">Měna platby.</td>
+<td valign="top">CC:CZK*</td>
+</tr>
+<tr>
+<td valign="top">RF</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 16 znaků</td>
+<td valign="top">Celé číslo</td>
+<td valign="top">Identifikátor platby pro příjemce.</td>
+<td valign="top">RF:1234567890123456*</td>
+</tr>
+<tr>
+<td valign="top">RN</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 35 znaků</td>
+<td valign="top">Všechny znaky z povolené množiny mimo ‘*’</td>
+<td valign="top">Jméno příjemce.</td>
+<td valign="top">RN:PETR DVORAK*</td>
+</tr>
+<tr>
+<td valign="top">DT</td>
+<td valign="top">NE</td>
+<td valign="top">Právě 8 znaků</td>
+<td valign="top">ISO 8601, tj. datum ve formátu YYYYMMDD.<p></p>
+<p align="left">Pouze numerické znaky.</p>
+</td>
+<td valign="top">Datum splatnosti.</td>
+<td valign="top">DT:20121231*</td>
+</tr>
+<tr>
+<td valign="top">PT</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 3 znaky</td>
+<td valign="top">Všechny znaky z povolené množiny mimo ‘*’</td>
+<td valign="top">Typ platby<p></p>
+<p>Hodnota „IP“ indikuje požadavek na provedení příkazu k úhradě formou okamžité platby, pokud je to v dané bance možné.</p></td>
+<td valign="top">PT:IP*</td>
+</tr>
+<tr>
+<td valign="top">MSG</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 60 znaků</td>
+<td valign="top">Všechny znaky z povolené množiny mimo ‘*’</td>
+<td valign="top">Zpráva pro příjemce.</td>
+<td valign="top">MSG:PLATBA ZA ELEKTRINU*</td>
+</tr>
+<tr>
+<td valign="top">CRC32</td>
+<td valign="top">NE</td>
+<td valign="top">Právě 8 znaků</td>
+<td valign="top">Znaky z množiny:<br>
+[A-F0-9]</td>
+<td valign="top">Kontrolní součet. Hodnota vznikne spočítáním CRC32 
+řetězce bez hodnoty CRC32 a převedením této číselné hodnoty do 
+hexadecimálního zápisu.<p></p>
+<p align="left">Princip vypočítání CRC32 (zajištění jednoznačnosti reprezentace pro výpočet CRC32):</p>
+<ul>
+<li>Použijí se všechny atributy mimo atributu CRC32</li>
+<li>Sestaví se kanonický řetězec tak, že převezme hlavičku („SPD*1.0*”),
+ ostatní atributy se setřídí dle klíče a sekundárně dle hodnoty, v tomto
+ pořadí se zakódují do řetězce dle specifikace a sestaví se tak základ 
+pro počítání CRC32</li>
+</ul>
+<p align="left">Výsledek se převede do šestnáctkové soustavy</p>
+</td>
+<td valign="top">CRC32:1234ABCD*</td>
+</tr>
+<tr>
+<td valign="top">NT</td>
+<td valign="top">NE</td>
+<td valign="top">Právě 1 znak</td>
+<td valign="top">P (= phone)<p></p>
+<p align="left">E (= e-mail)</p>
+</td>
+<td valign="top">Identifikace kanálu pro zaslání notifikace výstavci platby.<br>
+Poznámka: odesílání notifikací se řídí podle podmínek jednotlicých bank,
+ nicméně doporučuje se odesílat v okamžiku blokace prostředků na účtu 
+plátce.</td>
+<td valign="top">NT:P – notifikace bude zaslána formou SMS<p></p>
+<p align="left">NT:E – notifikace bude zaslána formou e-mailu</p>
+</td>
+</tr>
+<tr>
+<td valign="top">NTA</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 320 znaků</td>
+<td valign="top">pro NT:P<br>
++N[12]<p></p>
+<p align="left">pro NT:E<br>
+e-mailAddress[64] @domainName[255]</p>
+</td>
+<td valign="top">Telefonní číslo v mezinárodním nebo lokálním vyjádření<p></p>
+<p align="left">nebo</p>
+<p align="left">E-mailová adresa</p>
+</td>
+<td valign="top">NTA:00420123456789<p></p>
+<p align="left">NTA:+420123456789</p>
+<p align="left">NTA:123456789</p>
+<p align="left">NTA:ales.dynda@abc.cz</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<h4>Tabulka 2 – Rozšířené atributy pro platební styk v rámci ČR</h4>
+<p>Rozšíření pro České podmínky obsahuje speciální atributy pro identifikátory bankovních plateb.</p>
+<table border="0" cellspacing="0" cellpadding="0">
+<thead>
+<tr>
+<td><strong>Klíč</strong></td>
+<td><strong>Povinný</strong></td>
+<td><strong>Délka</strong></td>
+<td><strong>Formát</strong></td>
+<td><strong>Hodnota</strong></td>
+<td><strong>Příklad zápisu klíče a hodnoty</strong></td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td valign="top">X-PER</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 2 znaky</td>
+<td valign="top">Celé číslo<p></p>
+<p align="left">Min. hodnota 0 (neopakovat).<br>
+Max. hodnota 30</p>
+</td>
+<td valign="top">Počet dní, po které se má provádět pokus o opětovné 
+provedení neúspěšné platby (z důvodů např. nedostupných prostředků na 
+účtu příkazce).</td>
+<td valign="top">X-PER:7*</td>
+</tr>
+<tr>
+<td valign="top">X-VS</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 10 znaků</td>
+<td valign="top">Celé číslo</td>
+<td valign="top">Variabilní symbol</td>
+<td valign="top">X-VS:1234567890*</td>
+</tr>
+<tr>
+<td valign="top">X-SS</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 10 znaků</td>
+<td valign="top">Celé číslo</td>
+<td valign="top">Specifický symbol</td>
+<td valign="top">X-SS:1234567890*</td>
+</tr>
+<tr>
+<td valign="top">X-KS</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 10 znaků</td>
+<td valign="top">Celé číslo</td>
+<td valign="top">Konstantní symbol</td>
+<td valign="top">X-KS:1234567890*</td>
+</tr>
+<tr>
+<td valign="top">X-ID</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 20 znaků.</td>
+<td valign="top">Všechny znaky z povolené množiny mimo ‘*’</td>
+<td valign="top">Identifikátor platby na straně příkazce. Jedná se o interní ID, jehož použití a interpretace závisí na bance příkazce.<p></p>
+<p align="left">Může být použito například jako identifikace e‑commerce platby, nebo pro statistické či marketingové účely.</p>
+</td>
+<td valign="top">X-ID:ABCDEFGHIJ1234567890*</td>
+</tr>
+<tr>
+<td valign="top">X-URL</td>
+<td valign="top">NE</td>
+<td valign="top">Max. 140 znaků</td>
+<td valign="top">Všechny znaky z povolené množiny mimo ‘*’</td>
+<td valign="top">URL, které je možno využít pro vlastní potřebu</td>
+<td valign="top">X-URL:HTTP://WWW.SOMEURL.COM/*</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<h4>Tabulka 3 – Atributy, které jsou schopny zpracovat všechny banky v ČR pro tuzemský platební styk</h4>
+<p>Uvedené atributy je schopna zpracovat kterákoliv banka v ČR v rámci 
+tuzemského platebního styku. Atributy, které nejsou v této tabulce 
+uvedené, jsou schopny zpracovat pouze některé banky. Více informací je k
+ dispozici vždy na dotaz u konkrétní banky.</p>
+<table border="0" cellspacing="0" cellpadding="0">
+<thead>
+<tr>
+<td><strong>Klíč</strong></td>
+<td><strong>Zpracují všechny banky</strong></td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td valign="top">ACC</td>
+<td rowspan="2" valign="top">ANO, vždy jen jeden účet</td>
+</tr>
+<tr>
+<td valign="top">ALT-ACC</td>
+</tr>
+<tr>
+<td valign="top">AM</td>
+<td valign="top">ANO</td>
+</tr>
+<tr>
+<td valign="top">CC</td>
+<td valign="top">ANO, pro tuzemský platební styk pouze CZK</td>
+</tr>
+<tr>
+<td valign="top">DT</td>
+<td valign="top">ANO</td>
+</tr>
+<tr>
+<td valign="top">MSG</td>
+<td valign="top">ANO</td>
+</tr>
+<tr>
+<td valign="top">X-VS</td>
+<td valign="top">ANO</td>
+</tr>
+<tr>
+<td valign="top">X-SS</td>
+<td valign="top">ANO</td>
+</tr>
+<tr>
+<td valign="top">X-KS</td>
+<td valign="top">ANO</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<h2>Ukládání a sdílení řetězce</h2>
+<p>Formát definuje pro potřeby klientských aplikací vlastní příponu souboru pro případ uložení a vlastní MIME type.<br>
+MIME-type: <strong>application/x-shortpaymentdescriptor</strong><br>
+Přípona souboru: <strong>*.spayd</strong></p>
+<p>&nbsp;</p>
+<h2>Příklad</h2>
+<p>Zpráva:<br>
+SPD*1.0*ACC:CZ9106000000000000000123*AM:450.00*CC:CZK*MSG:PLATBA ZA ZBOZI*X-VS:1234567890</p>
+<p>QR kód:</p>
+<div id="attachment_76" class="wp-caption alignnone" style="width: 360px"><a href="http://api.paylibo.com/paylibo/generator/czech/image?accountNumber=123&amp;bankCode=0600&amp;amount=450.00&amp;currency=CZK&amp;vs=1234567890&amp;message=PLATBA%20ZA%20ZBOZI&amp;size=350"><img class="size-full wp-image-76" title="QR platba příklad" src="QR_platebni_kod_specifikace_files/image.png" alt="QR platba příklad" width="350" height="350"></a><p class="wp-caption-text">QR platba příklad</p></div>
+                                    </div><!-- end of .post-entry -->
+                
+                             
+            
+            <div class="post-edit"></div> 
+            </div><!-- end of #post-39 -->
+            
+            
+
+
+
+            
+         
+        
+        
+	      
+      
+        </div><!-- end of #content-full -->
+
+    </div><!-- end of #wrapper -->
+    </div><!-- end of #container -->
+
+<div id="footer" class="clearfix">
+
+    <div id="footer-wrapper">
+    
+        <div class="grid col-940">
+        
+        <div class="grid col-540">
+		         </div><!-- end of col-540 -->
+         
+         <div class="grid col-380 fit">
+         <ul class="social-icons"><li class="twitter-icon"><a href="https://twitter.com/QRPlatba"><img src="QR_platebni_kod_specifikace_files/twitter-icon.png" width="24" height="24" alt="Twitter"></a></li><li class="rss-feed-icon"><a href="https://api.twitter.com/1/statuses/user_timeline.rss?screen_name=QRPlatba"><img src="QR_platebni_kod_specifikace_files/rss-feed-icon.png" width="24" height="24" alt="RSS Feed"></a></li></ul><!-- end of .social-icons -->         </div><!-- end of col-380 fit -->
+         
+         </div><!-- end of col-940 -->
+                             
+        <div class="grid col-300 copyright">
+            © 2026<a href="https://qr-platba.cz/" title="QR Platba">
+                QR Platba</a>, 
+	    <a href="mailto:info@qr-platba.cz">e-mail</a>
+        </div><!-- end of .copyright -->
+        
+        <div class="grid col-300 scroll-top"><a href="#scroll-top" title="scroll to top">↑</a></div>
+        
+        <div class="grid col-300 fit powered">
+            <a href="http://themeid.com/responsive-theme/" title="Responsive Theme">
+                    Responsive Theme</a>
+            powered by <a href="http://wordpress.org/" title="WordPress">
+                    WordPress</a>
+        </div><!-- end .powered -->
+        
+    </div><!-- end #footer-wrapper -->
+    
+</div><!-- end #footer -->
+
+<!-- Custom Scripts -->
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-22226663-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+<script type="text/javascript" src="QR_platebni_kod_specifikace_files/responsive-scripts.js"></script>
+<script type="text/javascript" src="QR_platebni_kod_specifikace_files/responsive-plugins.js"></script>
+
+</body></html>
