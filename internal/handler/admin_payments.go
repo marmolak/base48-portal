@@ -70,8 +70,8 @@ func (h *Handler) AdminUnmatchedPaymentsHandler(w http.ResponseWriter, r *http.R
 			amountFloat = amount
 		}
 
-		// SKIP ALL OUTGOING PAYMENTS (negative or zero amounts)
-		if amountFloat <= 0 {
+		// SKIP: outgoing payments (negative/zero) and small incoming (< 5 Kč, usually bank interest)
+		if amountFloat < 5 {
 			continue
 		}
 

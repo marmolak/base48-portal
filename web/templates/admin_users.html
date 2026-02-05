@@ -117,12 +117,13 @@
                     {{ end }}
                 </td>
                 <td>
+                    <a href="/admin/users/{{ .DBUser.ID }}" class="btn btn-sm btn-view" title="Zobrazit profil">
+                        Zobrazit
+                    </a>
                     {{ if .DBUser.KeycloakID.Valid }}
                         <button class="btn btn-sm" onclick="manageRoles('{{ .DBUser.KeycloakID.String }}', '{{ .DBUser.Email }}')">
                             Manage Roles
                         </button>
-                    {{ else }}
-                        <span class="text-muted">N/A</span>
                     {{ end }}
                 </td>
             </tr>
@@ -324,6 +325,17 @@
 .btn-primary {
     background-color: #2196F3;
     color: white;
+}
+
+.btn-view {
+    background-color: #6b7280;
+    color: white;
+    text-decoration: none;
+    margin-right: 4px;
+}
+
+.btn-view:hover {
+    background-color: #4b5563;
 }
 
 .btn-danger {
