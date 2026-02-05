@@ -27,19 +27,22 @@ type Level struct {
 }
 
 type Payment struct {
-	ID             int64          `json:"id"`
-	UserID         sql.NullInt64  `json:"user_id"`
-	Date           time.Time      `json:"date"`
-	Amount         string         `json:"amount"`
-	Kind           string         `json:"kind"`
-	KindID         string         `json:"kind_id"`
-	LocalAccount   string         `json:"local_account"`
-	RemoteAccount  string         `json:"remote_account"`
-	Identification string         `json:"identification"`
-	RawData        sql.NullString `json:"raw_data"`
-	StaffComment   sql.NullString `json:"staff_comment"`
-	CreatedAt      time.Time      `json:"created_at"`
-	ProjectID      sql.NullInt64  `json:"project_id"`
+	ID              int64          `json:"id"`
+	UserID          sql.NullInt64  `json:"user_id"`
+	Date            time.Time      `json:"date"`
+	Amount          string         `json:"amount"`
+	Kind            string         `json:"kind"`
+	KindID          string         `json:"kind_id"`
+	LocalAccount    string         `json:"local_account"`
+	RemoteAccount   string         `json:"remote_account"`
+	Identification  string         `json:"identification"`
+	RawData         sql.NullString `json:"raw_data"`
+	StaffComment    sql.NullString `json:"staff_comment"`
+	CreatedAt       time.Time      `json:"created_at"`
+	ProjectID       sql.NullInt64  `json:"project_id"`
+	DismissedAt     interface{}    `json:"dismissed_at"`
+	DismissedBy     interface{}    `json:"dismissed_by"`
+	DismissedReason interface{}    `json:"dismissed_reason"`
 }
 
 type Project struct {
@@ -47,6 +50,14 @@ type Project struct {
 	Name        string         `json:"name"`
 	PaymentsID  sql.NullString `json:"payments_id"`
 	Description sql.NullString `json:"description"`
+}
+
+type ProjectV struct {
+	ID        int64          `json:"id"`
+	ProjectID int64          `json:"project_id"`
+	Vs        string         `json:"vs"`
+	Note      sql.NullString `json:"note"`
+	CreatedAt sql.NullTime   `json:"created_at"`
 }
 
 type SystemLog struct {

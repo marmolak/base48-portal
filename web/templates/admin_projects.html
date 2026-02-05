@@ -88,6 +88,56 @@
         font-weight: 600;
     }
 
+    .vs-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-family: 'Courier New', monospace;
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-right: 4px;
+        margin-bottom: 2px;
+    }
+
+    .vs-tag .remove-vs {
+        cursor: pointer;
+        color: #6b7280;
+        font-size: 14px;
+        margin-left: 2px;
+        line-height: 1;
+    }
+
+    .vs-tag .remove-vs:hover {
+        color: #ef4444;
+    }
+
+    .vs-tag.primary {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .add-vs-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        background: #f3f4f6;
+        color: #6b7280;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        cursor: pointer;
+        border: 1px dashed #d1d5db;
+    }
+
+    .add-vs-btn:hover {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
     details {
         background: white;
         border: 1px solid #e5e7eb;
@@ -307,6 +357,23 @@ async function loadProjects() {
             data.projects.forEach(project => {
                 const balance = project.total_amount || 0;
 
+                // Build VS tags HTML
+                let vsTagsHtml = '';
+                if (project.vs_list && project.vs_list.length > 0) {
+                    project.vs_list.forEach((vsItem, index) => {
+                        const isPrimary = index === 0;
+                        const noteTitle = vsItem.note ? ` title="${vsItem.note}"` : '';
+                        vsTagsHtml += `
+                            <span class="vs-tag ${isPrimary ? 'primary' : ''}"${noteTitle}>
+                                ${vsItem.vs}
+                                <span class="remove-vs" onclick="event.stopPropagation(); removeVS(${project.id}, '${vsItem.vs}')" title="Odebrat VS">×</span>
+                            </span>
+                        `;
+                    });
+                } else {
+                    vsTagsHtml = '<span style="color: #9ca3af;">žádné VS</span>';
+                }
+
                 const projectSection = document.createElement('details');
                 projectSection.innerHTML = `
                     <summary>
@@ -314,8 +381,9 @@ async function loadProjects() {
                             <div class="project-info">
                                 <div class="project-title">${project.name}</div>
                                 <div class="project-meta">
-                                    VS: <span class="vs">${project.payments_id || 'N/A'}</span>
-                                    ${project.description ? ' | ' + project.description : ''}
+                                    VS: ${vsTagsHtml}
+                                    <span class="add-vs-btn" onclick="event.stopPropagation(); addVSPrompt(${project.id})" title="Přidat další VS">+ VS</span>
+                                    ${project.description ? '<br><span style="color: #9ca3af;">' + project.description + '</span>' : ''}
                                 </div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 15px;">
@@ -489,6 +557,76 @@ window.onclick = function(event) {
     const modal = document.getElementById('createModal');
     if (event.target == modal) {
         closeCreateModal();
+    }
+}
+
+// Add VS to project
+async function addVSPrompt(projectId) {
+    const vs = prompt('Zadejte nový variabilní symbol pro projekt:');
+    if (!vs) return;
+
+    // Validate VS is numeric
+    if (!/^\d+$/.test(vs)) {
+        alert('Variabilní symbol musí obsahovat pouze čísla!');
+        return;
+    }
+
+    const note = prompt('Poznámka (volitelné, např. "překlep od XY"):') || '';
+
+    try {
+        const response = await fetch('/api/admin/projects/vs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                vs: vs,
+                note: note
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('VS bylo přidáno!');
+            loadProjects();
+        } else {
+            alert('Chyba: ' + (data.error || 'Nepodařilo se přidat VS'));
+        }
+    } catch (error) {
+        alert('Chyba: ' + error);
+    }
+}
+
+// Remove VS from project
+async function removeVS(projectId, vs) {
+    if (!confirm(`Opravdu chcete odebrat VS "${vs}" z projektu?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/admin/projects/vs', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                vs: vs
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('VS bylo odebráno!');
+            loadProjects();
+        } else {
+            alert('Chyba: ' + (data.error || 'Nepodařilo se odebrat VS'));
+        }
+    } catch (error) {
+        alert('Chyba: ' + error);
     }
 }
 

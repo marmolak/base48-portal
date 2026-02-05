@@ -32,32 +32,6 @@
             font-size: 14px;
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: #f9fafb;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 5px;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #111827;
-        }
-
         .category-section {
             margin-bottom: 40px;
         }
@@ -365,17 +339,6 @@
             <p class="subtitle" style="margin: 5px 0 0 0;">Příchozí platby, které se nepodařilo automaticky přiřadit k uživateli</p>
         </div>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-label">Počet plateb</div>
-                <div class="stat-value" style="color: #059669;">{{.CountPayments}}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Celková částka</div>
-                <div class="stat-value" style="color: #059669;">{{printf "%.2f" .TotalAmount}} Kč</div>
-            </div>
-        </div>
-
         {{if eq .TotalCount 0}}
         <div class="empty-state">
             <div class="empty-state-icon">✓</div>
@@ -531,6 +494,54 @@
 
         {{end}}
 
+        <!-- Dismissed/Archived Payments -->
+        {{if gt .DismissedCount 0}}
+        <div class="category-section" style="margin-top: 40px;">
+            <details>
+                <summary>
+                    <div class="category-header" style="border-left-color: #9ca3af; background: #f3f4f6;">
+                        <span class="category-title" style="color: #6b7280;">🗄️ Archiv - Vyřízené platby (smetiště dějin)</span>
+                        <span class="category-count">{{.DismissedCount}}</span>
+                        <span style="font-size: 12px; color: #9ca3af; margin-left: 10px;">{{printf "%.0f" .DismissedTotal}} Kč</span>
+                        <span class="collapse-indicator">▼</span>
+                    </div>
+                </summary>
+                <div class="category-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Datum</th>
+                        <th>Částka</th>
+                        <th>VS</th>
+                        <th>Odesílatel</th>
+                        <th>Důvod archivace</th>
+                        <th>Akce</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .DismissedPayments}}
+                    <tr style="opacity: 0.7;">
+                        <td>{{.ID}}</td>
+                        <td class="date">{{.Date.Format "02.01.2006"}}</td>
+                        <td class="amount" style="color: #9ca3af;">+{{.Amount}} Kč</td>
+                        <td>{{if .Identification}}<span class="vs">{{.Identification}}</span>{{else}}-{{end}}</td>
+                        <td class="account">{{.RemoteAccount}}</td>
+                        <td class="reason" style="font-size: 12px;">{{if .StaffComment.Valid}}{{.StaffComment.String}}{{else}}-{{end}}</td>
+                        <td>
+                            <button class="btn btn-sm" style="background: #10b981; color: white;" onclick="undismissPayment({{.ID}})">
+                                Oživit
+                            </button>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+                </div>
+            </details>
+        </div>
+        {{end}}
+
         <!-- Payment Management Modal -->
         <div id="assignmentModal" class="modal" style="display:none;">
             <div class="modal-content" style="width: 700px;">
@@ -606,6 +617,18 @@
                                 <div style="font-size: 13px; color: #6b7280;">Jen uložit upravené údaje bez přiřazení</div>
                             </div>
                         </label>
+
+                        <!-- Dismiss / Ignore -->
+                        <label style="display: flex; align-items: start; cursor: pointer; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; transition: all 0.2s; background: #fef2f2;" onmouseover="this.style.background='#fee2e2'" onmouseout="if(!document.getElementById('dismissPayment').checked) this.style.background='#fef2f2'">
+                            <input type="radio" name="assignType" id="dismissPayment" value="dismiss" onchange="handleAssignTypeChange('dismiss')" style="margin-top: 3px;">
+                            <div style="margin-left: 10px; flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 5px; color: #991b1b;">Označit jako vyřízeno (ignorovat)</div>
+                                <div style="font-size: 13px; color: #6b7280;">Platba zmizí z tohoto seznamu - nepřiřadí se nikomu</div>
+                                <div id="dismissSection" style="display: none; margin-top: 10px;">
+                                    <input type="text" id="dismissReason" placeholder="Důvod (např. dar, jednorázová platba, duplicita...)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                </div>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
@@ -650,6 +673,17 @@
             document.querySelectorAll('input[name="assignType"]').forEach(r => r.checked = false);
             document.getElementById('userAssignSection').style.display = 'none';
             document.getElementById('projectAssignSection').style.display = 'none';
+            document.getElementById('dismissSection').style.display = 'none';
+            document.getElementById('dismissReason').value = '';
+
+            // Reset all label styles
+            document.querySelectorAll('input[name="assignType"]').forEach(radio => {
+                const label = radio.closest('label');
+                if (label) {
+                    label.style.borderColor = '#e5e7eb';
+                    label.style.background = radio.value === 'dismiss' ? '#fef2f2' : 'white';
+                }
+            });
 
             // Reset user search
             document.getElementById('userSearch').value = '';
@@ -670,6 +704,7 @@
             // Hide all sections first
             document.getElementById('userAssignSection').style.display = 'none';
             document.getElementById('projectAssignSection').style.display = 'none';
+            document.getElementById('dismissSection').style.display = 'none';
 
             // Show relevant section
             if (type === 'user') {
@@ -678,21 +713,27 @@
             } else if (type === 'project') {
                 document.getElementById('projectAssignSection').style.display = 'block';
                 selectedUserId = null;
+            } else if (type === 'dismiss') {
+                document.getElementById('dismissSection').style.display = 'block';
+                selectedUserId = null;
+                selectedProjectId = null;
             } else if (type === 'unmatched') {
                 selectedUserId = null;
                 selectedProjectId = null;
             }
 
             // Update button highlighting
-            const labels = document.querySelectorAll('label');
-            labels.forEach(label => {
-                const radio = label.querySelector('input[type="radio"]');
-                if (radio && radio.checked) {
-                    label.style.borderColor = '#2196F3';
-                    label.style.background = '#eff6ff';
-                } else if (radio) {
-                    label.style.borderColor = '#e5e7eb';
-                    label.style.background = 'white';
+            const labels = document.querySelectorAll('input[name="assignType"]');
+            labels.forEach(radio => {
+                const label = radio.closest('label');
+                if (label) {
+                    if (radio.checked) {
+                        label.style.borderColor = '#2196F3';
+                        label.style.background = type === 'dismiss' ? '#fee2e2' : '#eff6ff';
+                    } else {
+                        label.style.borderColor = '#e5e7eb';
+                        label.style.background = radio.value === 'dismiss' ? '#fef2f2' : 'white';
+                    }
                 }
             });
         }
@@ -731,8 +772,10 @@
                     let html = '<div style="padding: 10px;">';
                     data.users.forEach(user => {
                         const displayName = user.realname || user.username || user.email;
+                        const escapedName = displayName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const escapedEmail = user.email.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         html += `
-                            <div class="user-item" onclick="selectUser(${user.id}, '${displayName.replace(/'/g, "\\'")}', '${user.email.replace(/'/g, "\\'")}', '${user.payments_id || ''}')" style="padding: 10px; border-bottom: 1px solid #e5e7eb; cursor: pointer;">
+                            <div class="user-item" onclick="selectUser(${user.id}, '${escapedName}', '${escapedEmail}', '${user.payments_id || ''}', this)" style="padding: 10px; border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: all 0.15s;">
                                 <div style="font-weight: 600;">${displayName}</div>
                                 <div style="font-size: 13px; color: #6b7280;">${user.email}${user.payments_id ? ' | VS: ' + user.payments_id : ''}</div>
                             </div>
@@ -748,14 +791,24 @@
             }
         }
 
-        function selectUser(userId, displayName, email, paymentsId) {
+        function selectUser(userId, displayName, email, paymentsId, element) {
             selectedUserId = userId;
 
             // Highlight selected user
             document.querySelectorAll('.user-item').forEach(item => {
                 item.style.background = 'transparent';
+                item.style.borderLeft = 'none';
             });
-            event.target.closest('.user-item').style.background = '#eff6ff';
+
+            // Find and highlight the clicked element
+            const userItem = element ? element.closest('.user-item') : null;
+            if (userItem) {
+                userItem.style.background = '#eff6ff';
+                userItem.style.borderLeft = '3px solid #2196F3';
+            }
+
+            // Show selected user info
+            document.getElementById('userSearch').value = displayName + ' (' + email + ')';
         }
 
         async function confirmAssignment() {
@@ -764,6 +817,35 @@
             const message = document.getElementById('editMessage').value.trim();
             const comment = document.getElementById('editComment').value.trim();
             const staffComment = document.getElementById('staffComment').value.trim();
+
+            // Handle dismiss separately
+            if (assignType && assignType.value === 'dismiss') {
+                const dismissReason = document.getElementById('dismissReason').value.trim();
+                try {
+                    const response = await fetch('/api/admin/payments/dismiss', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            payment_id: currentPaymentId,
+                            reason: dismissReason || staffComment || 'Bez udání důvodu'
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert('Platba byla označena jako vyřízená!');
+                        location.reload();
+                    } else {
+                        alert('Chyba: ' + (data.error || 'Nepodařilo se označit platbu'));
+                    }
+                } catch (error) {
+                    alert('Chyba: ' + error);
+                }
+                return;
+            }
 
             // Validate based on assignment type
             if (assignType && assignType.value === 'user') {
@@ -829,5 +911,35 @@
                 });
             }
         });
+
+        // Undismiss (restore) a payment from archive
+        async function undismissPayment(paymentId) {
+            if (!confirm('Oživit tuto platbu? Vrátí se zpět do seznamu nespárovaných plateb.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/payments/undismiss', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        payment_id: paymentId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Platba byla oživena!');
+                    location.reload();
+                } else {
+                    alert('Chyba: ' + (data.error || 'Nepodařilo se oživit platbu'));
+                }
+            } catch (error) {
+                alert('Chyba: ' + error);
+            }
+        }
     </script>
 {{ end }}

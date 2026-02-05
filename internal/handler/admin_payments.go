@@ -95,7 +95,7 @@ func (h *Handler) AdminUnmatchedPaymentsHandler(w http.ResponseWriter, r *http.R
 		}
 
 		// Check if this VS belongs to a project (skip if it does)
-		_, err = h.queries.GetProjectByPaymentsID(ctx, sql.NullString{String: payment.Identification, Valid: true})
+		_, err = h.queries.GetProjectByPaymentsID(ctx, payment.Identification)
 		if err == nil {
 			// Project exists with this VS - this is a project payment, skip it
 			continue
@@ -127,6 +127,39 @@ func (h *Handler) AdminUnmatchedPaymentsHandler(w http.ResponseWriter, r *http.R
 		countSyncBug++
 	}
 
+	// Get dismissed payments for archive section
+	allDismissedPayments, err := h.queries.ListDismissedPayments(ctx)
+	if err != nil {
+		http.Error(w, "Failed to fetch dismissed payments", http.StatusInternalServerError)
+		return
+	}
+
+	// Filter dismissed payments - exclude those with project VS (they belong to projects, not archive)
+	var dismissedPayments []db.Payment
+	dismissedTotal := 0.0
+	for _, p := range allDismissedPayments {
+		// Skip small amounts
+		amountFloat := 0.0
+		if amount, err := strconv.ParseFloat(p.Amount, 64); err == nil {
+			amountFloat = amount
+		}
+		if amountFloat < 5 {
+			continue
+		}
+
+		// Skip if VS belongs to a project
+		if p.Identification != "" {
+			_, err := h.queries.GetProjectByPaymentsID(ctx, p.Identification)
+			if err == nil {
+				// Project exists with this VS - skip, it's a project payment
+				continue
+			}
+		}
+
+		dismissedPayments = append(dismissedPayments, p)
+		dismissedTotal += amountFloat
+	}
+
 	// Prepare template data
 	data := map[string]interface{}{
 		"User":              user,
@@ -138,6 +171,9 @@ func (h *Handler) AdminUnmatchedPaymentsHandler(w http.ResponseWriter, r *http.R
 		"CountEmptyVS":      countEmptyVS,
 		"CountUserNotFound": countUserNotFound,
 		"CountSyncBug":      countSyncBug,
+		"DismissedPayments": dismissedPayments,
+		"DismissedCount":    len(dismissedPayments),
+		"DismissedTotal":    dismissedTotal,
 	}
 
 	h.render(w, "admin_payments_unmatched.html", data)
@@ -258,6 +294,177 @@ func parseFloat(s string) float64 {
 	var f float64
 	fmt.Sscanf(s, "%f", &f)
 	return f
+}
+
+// DismissPaymentRequest is the request body for dismissing a payment
+type DismissPaymentRequest struct {
+	PaymentID int64  `json:"payment_id"`
+	Reason    string `json:"reason"`
+}
+
+// AdminDismissPaymentHandler marks a payment as dismissed (seen/ignored)
+// POST /api/admin/payments/dismiss
+func (h *Handler) AdminDismissPaymentHandler(w http.ResponseWriter, r *http.Request) {
+	user := h.auth.GetUser(r)
+	if user == nil {
+		h.jsonError(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if !user.IsAdmin() {
+		h.jsonError(w, "Forbidden - admin access required", http.StatusForbidden)
+		return
+	}
+
+	var req DismissPaymentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.jsonError(w, "Invalid request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	// Get admin user from DB
+	adminDBUser, err := h.queries.GetUserByKeycloakID(ctx, sql.NullString{
+		String: user.ID,
+		Valid:  true,
+	})
+	if err != nil {
+		h.jsonError(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	// Verify payment exists
+	payment, err := h.queries.GetPayment(ctx, req.PaymentID)
+	if err != nil {
+		h.jsonError(w, "Payment not found", http.StatusNotFound)
+		return
+	}
+
+	// Dismiss the payment
+	staffComment := sql.NullString{}
+	if req.Reason != "" {
+		staffComment = sql.NullString{String: "[DISMISSED] " + req.Reason, Valid: true}
+	} else {
+		staffComment = sql.NullString{String: "[DISMISSED]", Valid: true}
+	}
+
+	_, err = h.queries.DismissPayment(ctx, db.DismissPaymentParams{
+		DismissedBy:     adminDBUser.ID,
+		DismissedReason: req.Reason,
+		StaffComment:    staffComment,
+		ID:              req.PaymentID,
+	})
+
+	if err != nil {
+		h.jsonError(w, "Failed to dismiss payment: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Log the action
+	adminUsername := "unknown"
+	if adminDBUser.Username.Valid {
+		adminUsername = adminDBUser.Username.String
+	}
+
+	h.queries.CreateLog(ctx, db.CreateLogParams{
+		Subsystem: "admin",
+		Level:     "info",
+		UserID:    sql.NullInt64{Int64: adminDBUser.ID, Valid: true},
+		Message: fmt.Sprintf("Admin %s (%s) dismissed payment #%d (%.2f Kč) - reason: %s",
+			adminUsername, adminDBUser.Email,
+			payment.ID, parseFloat(payment.Amount),
+			req.Reason),
+		Metadata: sql.NullString{
+			String: fmt.Sprintf(`{"admin_user_id":%d,"payment_id":%d,"amount":"%s","reason":"%s"}`,
+				adminDBUser.ID, payment.ID, payment.Amount, req.Reason),
+			Valid: true,
+		},
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Payment dismissed successfully",
+	})
+}
+
+// UndismissPaymentRequest is the request body for undismissing a payment
+type UndismissPaymentRequest struct {
+	PaymentID int64 `json:"payment_id"`
+}
+
+// AdminUndismissPaymentHandler restores a dismissed payment back to unmatched
+// POST /api/admin/payments/undismiss
+func (h *Handler) AdminUndismissPaymentHandler(w http.ResponseWriter, r *http.Request) {
+	user := h.auth.GetUser(r)
+	if user == nil {
+		h.jsonError(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if !user.IsAdmin() {
+		h.jsonError(w, "Forbidden - admin access required", http.StatusForbidden)
+		return
+	}
+
+	var req UndismissPaymentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.jsonError(w, "Invalid request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	// Get admin user from DB
+	adminDBUser, err := h.queries.GetUserByKeycloakID(ctx, sql.NullString{
+		String: user.ID,
+		Valid:  true,
+	})
+	if err != nil {
+		h.jsonError(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	// Verify payment exists
+	payment, err := h.queries.GetPayment(ctx, req.PaymentID)
+	if err != nil {
+		h.jsonError(w, "Payment not found", http.StatusNotFound)
+		return
+	}
+
+	// Undismiss the payment
+	_, err = h.queries.UndismissPayment(ctx, req.PaymentID)
+	if err != nil {
+		h.jsonError(w, "Failed to undismiss payment: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Log the action
+	adminUsername := "unknown"
+	if adminDBUser.Username.Valid {
+		adminUsername = adminDBUser.Username.String
+	}
+
+	h.queries.CreateLog(ctx, db.CreateLogParams{
+		Subsystem: "admin",
+		Level:     "info",
+		UserID:    sql.NullInt64{Int64: adminDBUser.ID, Valid: true},
+		Message: fmt.Sprintf("Admin %s (%s) restored payment #%d (%.2f Kč) from archive",
+			adminUsername, adminDBUser.Email,
+			payment.ID, parseFloat(payment.Amount)),
+		Metadata: sql.NullString{
+			String: fmt.Sprintf(`{"admin_user_id":%d,"payment_id":%d,"amount":"%s"}`,
+				adminDBUser.ID, payment.ID, payment.Amount),
+			Valid: true,
+		},
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Payment restored successfully",
+	})
 }
 
 // UpdatePaymentRequest is the request body for updating a payment

@@ -111,7 +111,27 @@ AND p.identification = u.payments_id
 ORDER BY p.date DESC;
 
 -- name: ListUnassignedPayments :many
-SELECT * FROM payments WHERE user_id IS NULL ORDER BY date DESC;
+SELECT * FROM payments WHERE user_id IS NULL AND dismissed_at IS NULL ORDER BY date DESC;
+
+-- name: ListDismissedPayments :many
+SELECT * FROM payments WHERE dismissed_at IS NOT NULL ORDER BY dismissed_at DESC;
+
+-- name: DismissPayment :one
+UPDATE payments SET
+    dismissed_at = CURRENT_TIMESTAMP,
+    dismissed_by = ?,
+    dismissed_reason = ?,
+    staff_comment = ?
+WHERE id = ?
+RETURNING *;
+
+-- name: UndismissPayment :one
+UPDATE payments SET
+    dismissed_at = NULL,
+    dismissed_by = NULL,
+    dismissed_reason = NULL
+WHERE id = ?
+RETURNING *;
 
 -- name: ListRecentPayments :many
 SELECT * FROM payments ORDER BY date DESC LIMIT ?;
@@ -227,7 +247,10 @@ SELECT * FROM projects ORDER BY id DESC;
 SELECT * FROM projects WHERE id = ? LIMIT 1;
 
 -- name: GetProjectByPaymentsID :one
-SELECT * FROM projects WHERE payments_id = ? LIMIT 1;
+-- Find project by any of its VS identifiers (in project_vs table)
+SELECT p.* FROM projects p
+JOIN project_vs pv ON p.id = pv.project_id
+WHERE pv.vs = ? LIMIT 1;
 
 -- name: CreateProject :one
 INSERT INTO projects (name, payments_id, description)
@@ -246,19 +269,37 @@ RETURNING *;
 DELETE FROM projects WHERE id = ?;
 
 -- name: GetProjectPayments :many
--- Get all payments that match the project's VS (identification)
-SELECT p.* FROM payments p
-WHERE p.identification = (
-    SELECT pr.payments_id FROM projects pr WHERE pr.id = ?
-)
+-- Get all payments for a project:
+-- 1. Payments explicitly assigned to project (project_id set)
+-- 2. Payments matching any of project's VS identifiers (from project_vs table)
+SELECT DISTINCT p.* FROM payments p
+WHERE p.project_id = sqlc.arg(project_id)
+   OR p.identification IN (SELECT pv.vs FROM project_vs pv WHERE pv.project_id = sqlc.arg(project_id))
 ORDER BY p.date DESC;
 
 -- name: GetProjectBalance :one
--- Sum all payments that match the project's VS (identification)
--- This includes both explicitly assigned payments (project_id set)
--- and payments that just have matching VS
-SELECT COALESCE(SUM(CAST(p.amount AS REAL)), 0) as total
-FROM payments p
-WHERE p.identification = (
-    SELECT pr.payments_id FROM projects pr WHERE pr.id = ?
-);
+-- Sum all payments for a project (by project_id OR by any VS in project_vs)
+SELECT COALESCE(SUM(CAST(amount AS REAL)), 0) as total
+FROM (
+    SELECT DISTINCT p.id, p.amount FROM payments p
+    WHERE p.project_id = sqlc.arg(project_id)
+       OR p.identification IN (SELECT pv.vs FROM project_vs pv WHERE pv.project_id = sqlc.arg(project_id))
+) sub;
+
+-- ============================================================================
+-- PROJECT VS (Multiple VS identifiers per project)
+-- ============================================================================
+
+-- name: ListProjectVS :many
+SELECT * FROM project_vs WHERE project_id = ? ORDER BY created_at;
+
+-- name: AddProjectVS :one
+INSERT INTO project_vs (project_id, vs, note)
+VALUES (?, ?, ?)
+RETURNING *;
+
+-- name: RemoveProjectVS :exec
+DELETE FROM project_vs WHERE project_id = ? AND vs = ?;
+
+-- name: GetProjectVSByVS :one
+SELECT * FROM project_vs WHERE vs = ? LIMIT 1;

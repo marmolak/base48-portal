@@ -111,10 +111,14 @@ func main() {
 		r.Post("/test-email", h.RequireAdmin(h.AdminTestEmailHandler))
 		r.Post("/payments/assign", h.RequireAdmin(h.AdminAssignPaymentHandler))
 		r.Post("/payments/update", h.RequireAdmin(h.AdminUpdatePaymentHandler))
+		r.Post("/payments/dismiss", h.RequireAdmin(h.AdminDismissPaymentHandler))
+		r.Post("/payments/undismiss", h.RequireAdmin(h.AdminUndismissPaymentHandler))
 		r.Get("/projects", h.RequireAdmin(h.AdminProjectsAPIHandler))
 		r.Post("/projects", h.RequireAdmin(h.AdminCreateProjectHandler))
 		r.Delete("/projects", h.RequireAdmin(h.AdminDeleteProjectHandler))
 		r.Get("/projects/payments", h.RequireAdmin(h.AdminProjectPaymentsHandler))
+		r.Post("/projects/vs", h.RequireAdmin(h.AdminAddProjectVSHandler))
+		r.Delete("/projects/vs", h.RequireAdmin(h.AdminRemoveProjectVSHandler))
 	})
 
 	// Create server
