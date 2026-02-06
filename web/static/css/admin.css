@@ -1,0 +1,255 @@
+/*
+ * Shared admin component styles — Base48 Member Portal
+ * See FRONTEND.md for the full specification.
+ *
+ * This file contains reusable components: buttons, badges, modals, text utilities.
+ * Page-specific styles remain in their respective template <style> blocks.
+ */
+
+/* ===== Layout ===== */
+
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ===== Buttons ===== */
+
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    line-height: 1.4;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+.btn-primary {
+    background-color: #2196F3;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #1976D2;
+}
+
+.btn-primary:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background-color: #6b7280;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-secondary:hover {
+    background-color: #4b5563;
+}
+
+.btn-view {
+    background-color: #6b7280;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-view:hover {
+    background-color: #4b5563;
+}
+
+.btn-danger {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+/* ===== Badges ===== */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.badge-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Semantic variants */
+.badge-success {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.badge-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+/* State variants — member states */
+.badge-accepted {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.badge-awaiting {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge-suspended {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-rejected {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.badge-exmember {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Role variants — per-role colors */
+.badge-role {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-role-active_member {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.badge-role-memberportal_admin {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-role-council_member {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-role-in_debt {
+    background-color: #ffedd5;
+    color: #9a3412;
+}
+
+/* Generic color variants */
+.badge-gray {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.badge-yellow {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-red {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-purple {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+.badge-blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-green {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge-orange {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.badge-indigo {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+/* ===== Text Utilities ===== */
+
+.text-negative {
+    color: #f44336;
+    font-weight: bold;
+}
+
+.text-positive {
+    color: #4CAF50;
+}
+
+.text-muted {
+    color: #999;
+}
+
+/* ===== Modal ===== */
+
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 30px;
+    border: 1px solid #888;
+    width: 600px;
+    max-width: 90%;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal .close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #6b7280;
+}
+
+.modal .close:hover {
+    color: #ef4444;
+}
