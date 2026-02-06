@@ -12,8 +12,10 @@ pkgs.buildGoModule rec {
 
   buildPhase = ''
     runHook preBuild
+
     mkdir -p $out/bin
     mkdir -p $out/share/portal/web
+    mkdir -p $out/share/portal/static
 
     export CGO_ENABLED=0
     export GOFLAGS="-p=$NIX_BUILD_CORES -trimpath -buildvcs=false"
@@ -23,6 +25,7 @@ pkgs.buildGoModule rec {
     go build -ldflags="-s -w" -o $out/bin/update_debt_status cmd/cron/update_debt_status.go
 
     cp -r web/templates $out/share/portal/web/
+    cp -r web/static $out/share/portal/web/
 
     runHook postBuild
   '';
