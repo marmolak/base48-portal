@@ -93,8 +93,8 @@
                 <td>
                     <span class="badge badge-{{ .DBUser.State }}">{{ .DBUser.State }}</span>
                 </td>
-                <td class="{{ if lt .Balance 0 }}text-negative{{ else }}text-positive{{ end }}">
-                    {{ .Balance }} Kč
+                <td class="{{ if lt .Balance 0 }}text-negative{{ else }}text-positive{{ end }}" style="white-space: nowrap;">
+                    {{ .Balance }}&nbsp;Kč
                 </td>
                 <td>
                     {{ if .KeycloakEnabled }}
@@ -119,14 +119,16 @@
                     {{ end }}
                 </td>
                 <td>
-                    <a href="/admin/users/{{ .DBUser.ID }}" class="btn btn-sm btn-view" title="Zobrazit profil">
-                        Zobrazit
-                    </a>
-                    {{ if .DBUser.KeycloakID.Valid }}
-                        <button class="btn btn-sm btn-view" onclick="manageRoles('{{ .DBUser.KeycloakID.String }}', '{{ .DBUser.Email }}')">
-                            Manage Roles
-                        </button>
-                    {{ end }}
+                    <div class="badge-group">
+                        <a href="/admin/users/{{ .DBUser.ID }}" class="btn btn-sm btn-view" title="View profile">
+                            View
+                        </a>
+                        {{ if .DBUser.KeycloakID.Valid }}
+                            <button class="btn btn-sm btn-view" onclick="manageRoles('{{ .DBUser.KeycloakID.String }}', '{{ .DBUser.Email }}')">
+                                Manage Roles
+                            </button>
+                        {{ end }}
+                    </div>
                 </td>
             </tr>
             {{ end }}
