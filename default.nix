@@ -10,18 +10,17 @@ pkgs.buildGoModule rec {
 
   vendorHash = "sha256-IVv6aQMOIR8zil9AdMSekAfFVkFV/MD2mrPZoatGkqQ=";
 
-  nativeBuildInputs = [ pkgs.pkg-config ];
-  buildInputs = [ pkgs.sqlite ];
-
   buildPhase = ''
     runHook preBuild
     mkdir -p $out/bin
     mkdir -p $out/share/portal/web
 
-    go build -ldflags="-s -w" -o $out/bin/portal cmd/server/main.go
+    export CGO_ENABLED=0
+    export GOFLAGS="-p=$NIX_BUILD_CORES -trimpath -buildvcs=false"
 
-    go build -o $out/bin/sync_fio_payments cmd/cron/sync_fio_payments.go
-    go build -o $out/bin/update_debt_status cmd/cron/update_debt_status.go
+    go build -ldflags="-s -w" -o $out/bin/portal cmd/server/main.go
+    go build -ldflags="-s -w" -o $out/bin/sync_fio_payments cmd/cron/sync_fio_payments.go
+    go build -ldflags="-s -w" -o $out/bin/update_debt_status cmd/cron/update_debt_status.go
 
     cp -r web/templates $out/share/portal/web/
 
