@@ -65,9 +65,9 @@ func main() {
 	r := chi.NewRouter()
 
 	// Middleware
+	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.RealIP)
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	// Static files
